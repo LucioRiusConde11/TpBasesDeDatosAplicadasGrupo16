@@ -58,6 +58,7 @@ CREATE TABLE ventas.MedioPago (
 CREATE TABLE ventas.Factura (
     ID INT PRIMARY KEY AUTO_INCREMENT,
     FechaHora DATETIME NOT NULL,
+    ID_Estado int NOT NULL,
     ID_Cliente INT NOT NULL,
     ID_Empleado INT NOT NULL,
     ID_Sucursal INT NOT NULL,
@@ -65,7 +66,8 @@ CREATE TABLE ventas.Factura (
     FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE RESTRICT,
     FOREIGN KEY (ID_Empleado) REFERENCES tienda.Empleado(ID) ON DELETE RESTRICT,
     FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE RESTRICT,
-    FOREIGN KEY (ID_MedioPago) REFERENCES ventas.MedioPago(ID) ON DELETE RESTRICT
+    FOREIGN KEY (ID_MedioPago) REFERENCES ventas.MedioPago(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (ID_Estado) REFERENCES ventas.EstadoFactura(ID) ON DELETE RESTRICT
 );
 
 -- Creación de la tabla DetalleFactura
@@ -77,4 +79,10 @@ CREATE TABLE ventas.DetalleFactura (
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE CASCADE,
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE RESTRICT
+);
+
+-- Creación de la tabla DetalleFactura
+CREATE TABLE ventas.EstadoFactura (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    Descripcion VARCHAR(10)
 );
