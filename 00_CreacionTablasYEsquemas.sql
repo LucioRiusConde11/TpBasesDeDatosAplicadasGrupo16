@@ -46,12 +46,23 @@ CREATE TABLE catalogo.Producto (
     PrecioUnitario DECIMAL(10, 2) NOT NULL
 );
 
+CREATE TABLE catalogo.LineaProductoAux (
+    LineaProducto VARCHAR(40),
+    Categoria VARCHAR(100)
+);
+
 USE ventas;
 
 -- Creación de la tabla MedioPago
 CREATE TABLE ventas.MedioPago (
     ID INT PRIMARY KEY AUTO_INCREMENT,
     Descripcion VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- Creación de la tabla DetalleFactura
+CREATE TABLE ventas.EstadoFactura (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    Descripcion VARCHAR(10)
 );
 
 -- Creación de la tabla Factura
@@ -81,8 +92,4 @@ CREATE TABLE ventas.DetalleFactura (
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE RESTRICT
 );
 
--- Creación de la tabla DetalleFactura
-CREATE TABLE ventas.EstadoFactura (
-    ID INT PRIMARY KEY AUTO_INCREMENT,
-    Descripcion VARCHAR(10)
-);
+
