@@ -92,4 +92,3 @@ CREATE TABLE ventas.DetalleFactura (
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE RESTRICT
 );
 
-
