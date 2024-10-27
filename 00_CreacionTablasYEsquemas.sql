@@ -54,6 +54,12 @@ CREATE TABLE ventas.MedioPago (
     Descripcion VARCHAR(50) NOT NULL UNIQUE
 );
 
+-- Creación de la tabla EstadoFactura
+CREATE TABLE ventas.EstadoFactura (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    Descripcion VARCHAR(10)
+);
+
 -- Creación de la tabla Factura
 CREATE TABLE ventas.Factura (
     ID INT PRIMARY KEY AUTO_INCREMENT,
@@ -81,8 +87,3 @@ CREATE TABLE ventas.DetalleFactura (
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE RESTRICT
 );
 
--- Creación de la tabla DetalleFactura
-CREATE TABLE ventas.EstadoFactura (
-    ID INT PRIMARY KEY AUTO_INCREMENT,
-    Descripcion VARCHAR(10)
-);
