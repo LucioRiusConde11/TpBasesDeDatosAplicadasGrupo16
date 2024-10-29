@@ -1,10 +1,11 @@
 Use master
 go
+
 IF NOT EXISTS ( SELECT name FROM master.dbo.sysdatabases WHERE name =
 'GRUPO_16')
 BEGIN
 	CREATE DATABASE GRUPO_16
-	COLLATE Latin1_General_CI_AI;
+	COLLATE Latin1_General_CI_AS; --Se manejan comparaciones con los acentos
 END
 go
 use GRUPO_16
