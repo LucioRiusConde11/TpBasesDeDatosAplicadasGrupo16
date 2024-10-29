@@ -18,6 +18,9 @@ Reportes:
 */
 
 -- Creación de la tabla Sucursal
+IF OBJECT_ID(N'tienda.Sucursal') IS NOT NULL
+	DROP TABLE tienda.Sucursal;
+
 CREATE TABLE tienda.Sucursal (
     ID INT IDENTITY PRIMARY KEY,
     Direccion VARCHAR(100) NOT NULL UNIQUE,
@@ -25,6 +28,9 @@ CREATE TABLE tienda.Sucursal (
 );
 
 -- Creación de la tabla Empleado
+IF OBJECT_ID(N'tienda.Empleado') IS NOT NULL
+	DROP TABLE tienda.Empleado;
+
 CREATE TABLE tienda.Empleado (
     ID INT IDENTITY PRIMARY KEY,
     Nombre VARCHAR(100) NOT NULL,
@@ -50,14 +56,30 @@ CREATE TABLE tienda.Cliente (
     Estado BIT DEFAULT 1
 );
 */
+
+-- Creación de la tabla Linea Producto
+IF OBJECT_ID(N'catalogo.CategoriaProducto') IS NOT NULL
+	DROP TABLE catalogo.CategoriaProducto;
+
+CREATE TABLE catalogo.CategoriaProducto (
+    ID INT IDENTITY PRIMARY KEY,
+	Categoria VARCHAR(100) NOT NULL UNIQUE,
+	LineaProducto VARCHAR(40) 
+);
+
 -- Creación de la tabla Producto
+IF OBJECT_ID(N'catalogo.Producto') IS NOT NULL
+	DROP TABLE catalogo.Producto;
+
 CREATE TABLE catalogo.Producto (
     ID INT IDENTITY PRIMARY KEY,
     Nombre VARCHAR(100) NOT NULL,
-    Categoria VARCHAR(100),
+    ID_Categoria INT,
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
 	PrecioReferencia DECIMAL(10,2),
-	UnidadReferencia VARCHAR(10) 
+	UnidadReferencia VARCHAR(10),
+    Fecha DATETIME NOT NULL,
+	FOREIGN KEY (ID_Categoria) REFERENCES catalogo.CategoriaProducto (ID) ON DELETE NO ACTION
 	--Precio de Referencia y unidad de referencia
 	--ayudaria a mostrar el precio total por unidad de 
 	--referencia, siempre esta en los supermercados
@@ -65,12 +87,11 @@ CREATE TABLE catalogo.Producto (
 );
 
 
-CREATE TABLE catalogo.LineaProducto (
-    LineaProducto VARCHAR(40),
-    Categoria VARCHAR(100)
-);
+
 
 -- Creación de la tabla MedioPago
+IF OBJECT_ID(N'ventas.MedioPago') IS NOT NULL
+	DROP TABLE ventas.MedioPago;
 CREATE TABLE ventas.MedioPago (
     ID INT IDENTITY PRIMARY KEY,
     Descripcion VARCHAR(50) NOT NULL UNIQUE
@@ -84,6 +105,9 @@ CREATE TABLE ventas.EstadoFactura (
 );
 */
 -- Creación de la tabla Factura
+IF OBJECT_ID(N'ventas.Factura') IS NOT NULL
+	DROP TABLE ventas.Factura;
+
 CREATE TABLE ventas.Factura (
     ID INT IDENTITY PRIMARY KEY,
     FechaHora DATETIME NOT NULL,
@@ -97,6 +121,9 @@ CREATE TABLE ventas.Factura (
 );
 
 -- Creación de la tabla DetalleFactura
+IF OBJECT_ID(N'ventas.DetalleFactura') IS NOT NULL
+	DROP TABLE ventas.DetalleFactura;
+
 CREATE TABLE ventas.DetalleFactura (
     ID INT IDENTITY PRIMARY KEY,
     ID_Factura INT NOT NULL,
