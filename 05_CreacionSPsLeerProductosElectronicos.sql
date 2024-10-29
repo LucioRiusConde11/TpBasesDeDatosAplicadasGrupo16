@@ -33,6 +33,12 @@ BEGIN
         -- Verificar la carga
         SELECT * FROM #ProductosTemp;
 
+		-- Obtener valor del dolar
+		IF OBJECT_ID('tempdb..#TempTableDolar') IS NOT NULL
+            DROP TABLE #TempTableDolar;
+		CREATE TABLE #TempTableDolar (ValorDolar DECIMAL(10,2));
+		INSERT INTO #TempTableDolar EXEC [catalogo].[ObtenerValorDolar]
+		UPDATE #ProductosTemp SET PrecioUnitarioenDolares =  PrecioUnitarioenDolares * (SELECT * FROM #TempTableDolar)
 
     END TRY
     BEGIN CATCH
