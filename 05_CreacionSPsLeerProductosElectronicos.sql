@@ -1,6 +1,3 @@
-USE GRUPO_16
-GO
-
 CREATE OR ALTER PROCEDURE catalogo.ImportarDesdeExcelElectronicos
     @FilePath NVARCHAR(255) -- Ruta completa del archivo Excel
 AS
