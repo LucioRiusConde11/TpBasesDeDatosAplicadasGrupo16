@@ -63,8 +63,9 @@ IF OBJECT_ID(N'catalogo.CategoriaProducto') IS NOT NULL
 
 CREATE TABLE catalogo.CategoriaProducto (
     ID INT IDENTITY PRIMARY KEY,
-	Categoria VARCHAR(100) NOT NULL UNIQUE,
-	LineaProducto VARCHAR(40) 
+	LineaProducto VARCHAR(40),
+	Categoria VARCHAR(100) NOT NULL UNIQUE
+	 
 );
 
 -- Creación de la tabla Producto

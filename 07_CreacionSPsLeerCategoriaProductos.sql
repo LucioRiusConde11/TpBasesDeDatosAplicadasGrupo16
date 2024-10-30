@@ -20,13 +20,13 @@ BEGIN
             DROP TABLE #tmp_CategoriaProducto;
 
 		CREATE TABLE #tmp_CategoriaProducto (
-			Categoria VARCHAR(100) NOT NULL UNIQUE,
-			LineaProducto VARCHAR(40)
+			LineaProducto VARCHAR(40),
+			Producto VARCHAR(100)
 		);
 
 		DECLARE @sql NVARCHAR(MAX);
 		SET @sql = N'
-			INSERT INTO #tmp_CategoriaProducto (Categoria, LineaProducto)
+			INSERT INTO #tmp_CategoriaProducto (LineaProducto, Producto)
 			SELECT * FROM OPENROWSET(
 				''Microsoft.ACE.OLEDB.12.0'',
 				''Excel 12.0;HDR=YES;Database=' + @FilePath + ''',
@@ -49,6 +49,6 @@ END;
 
 --FUENTE: https://learn.microsoft.com/en-us/sql/relational-databases/import-export/import-data-from-excel-to-sql?view=sql-server-ver16 
 
-EXEC catalogo.ImportarCategoriaProducto '..\..\TP_integrador_Archivos\Informacion_complementaria.xlsx'
+--EXEC catalogo.ImportarCategoriaProducto '..\..\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 
 
