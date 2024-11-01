@@ -35,7 +35,18 @@ BEGIN
 
 		EXEC sp_executesql @sql;
 
-		SELECT * FROM #tmp_CategoriaProducto;
+		INSERT INTO catalogo.CategoriaProducto (LineaProducto, Categoria)
+		(
+			SELECT tmp.LineaProducto, tmp.Producto
+				FROM #tmp_CategoriaProducto tmp
+				WHERE NOT EXISTS
+				(
+					SELECT 1
+						FROM catalogo.CategoriaProducto c
+						WHERE tmp.Producto = c.Categoria 
+						COLLATE Modern_Spanish_CI_AS
+				)
+		)
 
 	END TRY
 	BEGIN CATCH

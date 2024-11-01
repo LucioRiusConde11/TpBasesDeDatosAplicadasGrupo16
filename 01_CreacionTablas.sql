@@ -33,9 +33,11 @@ IF OBJECT_ID(N'tienda.Empleado') IS NOT NULL
 
 CREATE TABLE tienda.Empleado (
     ID INT IDENTITY PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL,
-    Apellido VARCHAR(100),
+	Legajo VARCHAR(7),
+    Nombre VARCHAR(50) NOT NULL,
+    Apellido VARCHAR(50),
     DNI VARCHAR(8), --No hay DNI mas largo
+	Mail_Empresa VARCHAR(100),
 	CUIL VARCHAR(13), --8 DNI, 3 numeros y 2 guiones = 13
     Cargo VARCHAR(50),
     Turno VARCHAR(25), --str(Jornada completa) es > 5
@@ -95,7 +97,8 @@ IF OBJECT_ID(N'ventas.MedioPago') IS NOT NULL
 	DROP TABLE ventas.MedioPago;
 CREATE TABLE ventas.MedioPago (
     ID INT IDENTITY PRIMARY KEY,
-    Descripcion VARCHAR(50) NOT NULL UNIQUE
+    Descripcion_ESP VARCHAR(50) NOT NULL UNIQUE,
+	Descripcion_ENG VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- Creación de la tabla EstadoFactura
@@ -113,7 +116,7 @@ CREATE TABLE ventas.Factura (
     ID INT IDENTITY PRIMARY KEY,
     FechaHora DATETIME NOT NULL,
     Estado VARCHAR(10),
-    ID_Cliente INT NOT NULL,
+    --ID_Cliente INT NOT NULL,
     ID_Empleado INT NOT NULL,
     --La sucursal se obtiene a traves de empleado
     ID_MedioPago INT NOT NULL,
