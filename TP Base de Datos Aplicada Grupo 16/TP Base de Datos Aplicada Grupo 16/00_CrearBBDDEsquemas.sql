@@ -8,7 +8,7 @@ BEGIN
 	COLLATE Modern_Spanish_CI_AS;
 END
 go
-use GRUPO_16
+use Com2900G16
 go
 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name =
 'ventas')

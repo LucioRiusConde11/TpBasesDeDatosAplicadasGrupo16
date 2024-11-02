@@ -51,11 +51,11 @@ CREATE TABLE tienda.Empleado (
     CHECK (Estado IN (0, 1)) 
 );
 
--- Creación de la tabla Cliente
+-- Creación de la tabl Cliente
 IF OBJECT_ID(N'tienda.Cliente') IS NOT NULL
 	DROP TABLE tienda.Cliente;
 
-CREATE TABLE tienda.Cliente (
+CREATE TABLE tienda.Cliente (--Me parece que es relevante poner al cliente, no queda tan bien que solo sea un atributo
     ID INT IDENTITY PRIMARY KEY,
     Nombre VARCHAR(100) NOT NULL,
     TipoCliente VARCHAR(6) NOT NULL,
@@ -136,4 +136,20 @@ CREATE TABLE ventas.DetalleFactura (
 	IdentificadorPago VARCHAR(30),
     FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE CASCADE,
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
+);
+
+-- Creación de la tabla NotaCredito
+IF OBJECT_ID(N'ventas.NotaCredito') IS NOT NULL
+    DROP TABLE ventas.NotaCredito;
+
+CREATE TABLE ventas.NotaCredito (--Un cliente realiza una nota de credito por un producto de la compra que hizo
+    ID INT IDENTITY PRIMARY KEY,
+    ID_Factura INT NOT NULL,
+	ID_Cliente INT NOT NULL,
+	ID_Producto INT NOT NULL,
+    FechaEmision DATETIME DEFAULT GETDATE(),
+    Motivo VARCHAR(255),
+    FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE NO ACTION,
+	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
+	FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
 );
