@@ -2,13 +2,13 @@ Use master
 go
 
 IF NOT EXISTS ( SELECT name FROM master.dbo.sysdatabases WHERE name =
-'GRUPO_16')
+'Com2900G16')
 BEGIN
-	CREATE DATABASE GRUPO_16
-	COLLATE Modern_Spanish_CI_AS; --Se manejan comparaciones con los acentos
+	CREATE DATABASE Com2900G16
+	COLLATE Modern_Spanish_CI_AS;
 END
 go
-use GRUPO_16
+use Com2900G16
 go
 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name =
 'ventas')
