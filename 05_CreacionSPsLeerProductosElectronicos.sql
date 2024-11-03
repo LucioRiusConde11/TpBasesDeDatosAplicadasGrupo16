@@ -2,6 +2,14 @@ CREATE OR ALTER PROCEDURE catalogo.ImportarDesdeExcelElectronicos
     @FilePath NVARCHAR(255) -- Ruta completa del archivo Excel
 AS
 BEGIN
+	DECLARE @valorDolar as INT;
+	SET @valorDolar = catalogo.ConversionDolarPeso()
+	IF (@valorDolar = 0)
+	BEGIN
+		PRINT 'Error al obtener el valor del dolar en pesos'
+		RETURN
+	END
+
     BEGIN TRY
         -- Configurar opciones avanzadas
         EXEC sp_configure 'show advanced options', 1;
@@ -31,14 +39,33 @@ BEGIN
         EXEC sp_executesql @sql;
 
         -- Verificar la carga
-        SELECT * FROM #ProductosTemp;
+        --SELECT * FROM #ProductosTemp;
+		
+			
+		IF NOT EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE Categoria = 'Electronico' AND LineaProducto = 'Accesorio')
+		BEGIN
+			INSERT INTO catalogo.CategoriaProducto (LineaProducto, Categoria)
+			VALUES ('Accesorio', 'Electronico')
+		END
+		
+		INSERT INTO catalogo.Producto (Nombre, ID_Categoria, PrecioUnitario, PrecioReferencia, UnidadReferencia, Fecha)
+		(
+			SELECT tmp.Product,
+				   (SELECT c.ID FROM catalogo.CategoriaProducto c WHERE c.Categoria = 'Electronico'),
+				   CAST(tmp.PrecioUnitarioenDolares as DECIMAL(10,2)) * @valorDolar,
+				   CAST(tmp.PrecioUnitarioenDolares as DECIMAL(10,2)),
+				   'USD',
+				   GETDATE()
+				FROM #ProductosTemp tmp
+				WHERE NOT EXISTS 
+					(
+						SELECT 1
+							FROM catalogo.Producto p
+							WHERE p.Nombre = tmp.Product COLLATE Modern_Spanish_CI_AS AND p.PrecioReferencia = CAST(tmp.PrecioUnitarioenDolares as DECIMAL(10,2))
+					)
+		)
 
-		-- Obtener valor del dolar
-		IF OBJECT_ID('tempdb..#TempTableDolar') IS NOT NULL
-            DROP TABLE #TempTableDolar;
-		CREATE TABLE #TempTableDolar (ValorDolar DECIMAL(10,2));
-		INSERT INTO #TempTableDolar EXEC [catalogo].[ObtenerValorDolar]
-		UPDATE #ProductosTemp SET PrecioUnitarioenDolares =  PrecioUnitarioenDolares * (SELECT * FROM #TempTableDolar)
+	
 
     END TRY
     BEGIN CATCH

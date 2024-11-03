@@ -36,8 +36,42 @@ BEGIN
         EXEC sp_executesql @sql;
 
         -- Verificar la carga
-        SELECT * FROM #ProductosTemp;
+        --SELECT * FROM #ProductosTemp;
+		
+		UPDATE #ProductosTemp
+		SET Categoría = CONCAT('importado_',Categoría)
 
+		INSERT INTO catalogo.CategoriaProducto (LineaProducto, Categoria)
+		(
+			SELECT DISTINCT 'Importado', tmp.Categoría
+				FROM #ProductosTemp tmp
+				WHERE NOT EXISTS
+				(
+					SELECT 1
+						FROM catalogo.CategoriaProducto c
+						WHERE c.Categoria = tmp.Categoría COLLATE Modern_Spanish_CI_AS
+				)
+		)
+
+		INSERT INTO catalogo.Producto (Nombre, ID_Categoria, PrecioUnitario, PrecioReferencia, UnidadReferencia, Fecha)
+		(
+			SELECT tmp.NombreProducto,
+				   (SELECT c.ID FROM catalogo.CategoriaProducto c WHERE c.Categoria = tmp.Categoría COLLATE Modern_Spanish_CI_AS),
+				   tmp.PrecioUnidad,
+				   tmp.PrecioUnidad,
+				   tmp.CantidadPorUnidad,
+				   GETDATE()
+				FROM #ProductosTemp tmp
+				WHERE NOT EXISTS
+				(
+					SELECT 1
+						FROM catalogo.Producto p 
+						WHERE p.Nombre = tmp.NombreProducto COLLATE Modern_Spanish_CI_AS
+						AND p.PrecioUnitario = tmp.PrecioUnidad
+						AND p.PrecioReferencia = tmp.PrecioUnidad 
+						AND p.UnidadReferencia = tmp.CantidadPorUnidad COLLATE Modern_Spanish_CI_AS
+				) 
+		)
 
     END TRY
     BEGIN CATCH

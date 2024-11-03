@@ -36,8 +36,8 @@ BEGIN
 
         EXEC sp_executesql @sql;
 
-        INSERT INTO tienda.Sucursal (Direccion, Ciudad)
-		(SELECT Direccion, Reemplazo FROM #tmpSucursal tmp WHERE NOT EXISTS 
+        INSERT INTO tienda.Sucursal (Direccion, Ciudad, Ciudad_anterior)
+		(SELECT Direccion, Reemplazo, Ciudad FROM #tmpSucursal tmp WHERE NOT EXISTS 
 		(SELECT 1 FROM tienda.Sucursal s WHERE tmp.Reemplazo = s.Ciudad collate Modern_Spanish_CI_AS AND tmp.Direccion = s.Direccion COLLATE Modern_Spanish_CI_AS)) 
 
     END TRY
