@@ -1,4 +1,4 @@
-USE [GRUPO_16]
+USE Com2900G16
 GO
 
 CREATE OR ALTER PROCEDURE [catalogo].[importarVentasCsv]
