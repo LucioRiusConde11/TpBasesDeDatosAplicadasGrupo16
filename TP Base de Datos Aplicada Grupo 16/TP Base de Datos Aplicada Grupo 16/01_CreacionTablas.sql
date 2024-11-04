@@ -24,7 +24,8 @@ IF OBJECT_ID(N'tienda.Sucursal') IS NOT NULL
 CREATE TABLE tienda.Sucursal (
     ID INT IDENTITY PRIMARY KEY,
     Direccion VARCHAR(100) NOT NULL UNIQUE,
-    Ciudad VARCHAR(50) NOT NULL
+    Ciudad VARCHAR(50) NOT NULL,
+	Ciudad_anterior VARCHAR(50)
 );
 
 -- Creación de la tabla Empleado
@@ -85,7 +86,7 @@ CREATE TABLE catalogo.Producto (
     ID_Categoria INT,
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
 	PrecioReferencia DECIMAL(10,2),
-	UnidadReferencia VARCHAR(10),
+	UnidadReferencia VARCHAR(25),
     Fecha DATETIME NOT NULL,
 	FOREIGN KEY (ID_Categoria) REFERENCES catalogo.CategoriaProducto (ID) ON DELETE NO ACTION
 	--Precio de Referencia y unidad de referencia
@@ -116,6 +117,7 @@ CREATE TABLE ventas.Factura (
     ID_Empleado INT NOT NULL,
     ID_Sucursal INT NOT NULL,
     ID_MedioPago INT NOT NULL,
+	id_factura_importado VARCHAR(30),
     FOREIGN KEY (ID_Empleado) REFERENCES tienda.Empleado(ID) ON DELETE NO ACTION,
     FOREIGN KEY (ID_MedioPago) REFERENCES ventas.MedioPago(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
