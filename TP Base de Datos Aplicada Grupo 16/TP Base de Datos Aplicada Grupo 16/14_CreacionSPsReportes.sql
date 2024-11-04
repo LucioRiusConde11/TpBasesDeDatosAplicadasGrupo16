@@ -1,7 +1,8 @@
 USE Com2900G16;
 GO
+
 -- 1. Reporte Mensual: Total facturado por días de la semana
-CREATE OR ALTER PROCEDURE ObtenerReporteMensualPorDias
+CREATE OR ALTER PROCEDURE informe.ObtenerReporteMensualPorDias
     @Mes INT,
     @Anio INT
 AS
@@ -32,9 +33,10 @@ BEGIN
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
 
-GO;
+
 -- 2. Reporte Trimestral: Total facturado por turnos de trabajo por mes
-CREATE OR ALTER  PROCEDURE ObtenerReporteTrimestralPorTurnos
+GO
+CREATE OR ALTER PROCEDURE informe.ObtenerReporteTrimestralPorTurnos
     @Trimestre INT
 AS
 BEGIN
@@ -59,9 +61,9 @@ BEGIN
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
 
-GO;
 -- 3. Reporte por Rango de Fechas: Cantidad de productos vendidos
-CREATE OR ALTER  PROCEDURE ObtenerProductosVendidosPorRangoFechas
+GO
+CREATE OR ALTER PROCEDURE informe.ObtenerProductosVendidosPorRangoFechas
     @FechaInicio DATETIME,
     @FechaFin DATETIME
 AS
@@ -86,9 +88,9 @@ BEGIN
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
 
-GO;
 -- 4. Reporte por Rango de Fechas: Cantidad de productos vendidos por sucursal
-CREATE OR ALTER  PROCEDURE ObtenerProductosVendidosPorRangoFechasSucursal
+GO
+CREATE OR ALTER  PROCEDURE informe.ObtenerProductosVendidosPorRangoFechasSucursal
     @FechaInicio DATETIME,
     @FechaFin DATETIME
 AS
@@ -116,9 +118,9 @@ BEGIN
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
 
-GO;
 -- 5. Top 5 Productos Más Vendidos en un Mes
-CREATE OR ALTER  PROCEDURE ObtenerTop5ProductosVendidosPorMes
+GO
+CREATE OR ALTER  PROCEDURE informe.ObtenerTop5ProductosVendidosPorMes
     @Mes INT,
     @Anio INT
 AS
@@ -143,9 +145,9 @@ BEGIN
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
 
-GO;
 -- 6. Top 5 Productos Menos Vendidos en un Mes
-CREATE OR ALTER  PROCEDURE ObtenerTop5ProductosMenosVendidosPorMes
+GO
+CREATE OR ALTER  PROCEDURE informe.ObtenerTop5ProductosMenosVendidosPorMes
     @Mes INT,
     @Anio INT
 AS
@@ -170,9 +172,9 @@ BEGIN
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
 
-GO;
 -- 7. Total Acumulado de Ventas para una Fecha y Sucursal
-CREATE OR ALTER PROCEDURE ObtenerTotalAcumuladoVentasPorFechaYSucursal
+GO
+CREATE OR ALTER PROCEDURE informe.ObtenerTotalAcumuladoVentasPorFechaYSucursal
     @Fecha DATE,
     @SucursalID INT
 AS
