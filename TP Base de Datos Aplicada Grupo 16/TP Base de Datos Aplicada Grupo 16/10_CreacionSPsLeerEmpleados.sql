@@ -15,7 +15,7 @@ BEGIN
             DROP TABLE #tmpEmpleado;
 
         CREATE TABLE #tmpEmpleado (
-			Legajo VARCHAR(10),
+			Legajo VARCHAR(6),
 			Nombre VARCHAR(100),
 			Apellido VARCHAR(100),
 			DNI VARCHAR(8),

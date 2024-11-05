@@ -1,6 +1,6 @@
 USE Com2900G16;
 GO
-CREATE FUNCTION [catalogo].[ConversionDolarPeso] ()
+CREATE OR ALTER FUNCTION [catalogo].[ConversionDolarPeso] ()
 RETURNS INT
 BEGIN
 DECLARE @URL NVARCHAR(MAX) = 'https://dolarapi.com/v1/dolares/oficial';
