@@ -457,7 +457,7 @@ BEGIN
         WHERE f.ID = @ID_Factura 
           AND f.ID_Cliente = @ID_Cliente
           AND df.ID_Producto = @ID_Producto
-		  AND ventas.Factura.Estado = 'Pagada'
+		  AND f.Estado = 'Pagada' 
     )
     BEGIN
         BEGIN TRANSACTION;
