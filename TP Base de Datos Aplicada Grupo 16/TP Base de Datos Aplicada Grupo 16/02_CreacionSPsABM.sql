@@ -10,7 +10,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Sucursal WHERE Direccion = @Direccion)
     BEGIN
-        RAISERROR ('Error: La dirección de la sucursal ya existe.', 16, 1);
+        PRINT ('Error: La dirección de la sucursal ya existe.', 16, 1);
         RETURN;
     END
 
@@ -36,7 +36,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Sucursal WHERE Direccion = @Direccion AND ID <> @ID)
     BEGIN
-        RAISERROR ('Error: La dirección de la sucursal ya existe.', 16, 1);
+        PRINT ('Error: La dirección de la sucursal ya existe.', 16, 1);
         RETURN;
     END
 
@@ -64,7 +64,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Empleado WHERE Legajo = @Legajo)
     BEGIN
-        RAISERROR ('Error: El legajo del empleado ya existe.', 16, 1);
+        PRINT ('Error: El legajo del empleado ya existe.', 16, 1);
         RETURN;
     END
 
@@ -97,7 +97,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Empleado WHERE Legajo = @Legajo AND ID <> @ID)
     BEGIN
-        RAISERROR ('Error: El legajo del empleado ya existe.', 16, 1);
+        PRINT ('Error: El legajo del empleado ya existe.', 16, 1);
         RETURN;
     END
 
@@ -126,13 +126,13 @@ AS
 BEGIN
     IF @TipoCliente NOT IN ('Member', 'Normal')
     BEGIN
-        RAISERROR ('Error: Tipo de cliente inválido.', 16, 1);
+        PRINT ('Error: Tipo de cliente inválido.', 16, 1);
         RETURN;
     END
 
     IF @Genero NOT IN ('Female', 'Male')
     BEGIN
-        RAISERROR ('Error: Género inválido.', 16, 1);
+        PRINT ('Error: Género inválido.', 16, 1);
         RETURN;
     END
 
@@ -159,13 +159,13 @@ AS
 BEGIN
     IF @TipoCliente NOT IN ('Member', 'Normal')
     BEGIN
-        RAISERROR ('Error: Tipo de cliente inválido.', 16, 1);
+        PRINT ('Error: Tipo de cliente inválido.', 16, 1);
         RETURN;
     END
 
     IF @Genero NOT IN ('Female', 'Male')
     BEGIN
-        RAISERROR ('Error: Género inválido.', 16, 1);
+        PRINT ('Error: Género inválido.', 16, 1);
         RETURN;
     END
 
@@ -186,7 +186,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE Categoria = @Categoria)
     BEGIN
-        RAISERROR ('Error: La categoría ya existe.', 16, 1);
+        PRINT ('Error: La categoría ya existe.', 16, 1);
         RETURN;
     END
 
@@ -211,7 +211,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE Categoria = @Categoria AND ID <> @ID)
     BEGIN
-        RAISERROR ('Error: La categoría ya existe.', 16, 1);
+        PRINT ('Error: La categoría ya existe.', 16, 1);
         RETURN;
     END
 
@@ -234,7 +234,7 @@ AS
 BEGIN
     IF @PrecioUnitario <= 0
     BEGIN
-        RAISERROR ('Error: Precio unitario debe ser mayor a cero.', 16, 1);
+        PRINT ('Error: Precio unitario debe ser mayor a cero.', 16, 1);
         RETURN;
     END
 
@@ -263,7 +263,7 @@ AS
 BEGIN
     IF @PrecioUnitario <= 0
     BEGIN
-        RAISERROR ('Error: Precio unitario debe ser mayor a cero.', 16, 1);
+        PRINT ('Error: Precio unitario debe ser mayor a cero.', 16, 1);
         RETURN;
     END
 
@@ -286,7 +286,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM ventas.MedioPago WHERE Descripcion_ESP = @Descripcion_ESP OR Descripcion_ENG = @Descripcion_ENG)
     BEGIN
-        RAISERROR ('Error: El medio de pago ya existe.', 16, 1);
+        PRINT ('Error: El medio de pago ya existe.', 16, 1);
         RETURN;
     END
 
@@ -311,7 +311,7 @@ AS
 BEGIN
     IF EXISTS (SELECT 1 FROM ventas.MedioPago WHERE (Descripcion_ESP = @Descripcion_ESP OR Descripcion_ENG = @Descripcion_ENG) AND ID <> @ID)
     BEGIN
-        RAISERROR ('Error: El medio de pago ya existe.', 16, 1);
+        PRINT ('Error: El medio de pago ya existe.', 16, 1);
         RETURN;
     END
 
@@ -335,7 +335,7 @@ AS
 BEGIN
     IF @Estado NOT IN ('Pagada', 'No pagada')
     BEGIN
-        RAISERROR ('Error: Estado inválido.', 16, 1);
+        PRINT ('Error: Estado inválido.', 16, 1);
         RETURN;
     END
 
@@ -365,7 +365,7 @@ AS
 BEGIN
     IF @Estado NOT IN ('Pagada', 'No pagada')
     BEGIN
-        RAISERROR ('Error: Estado inválido.', 16, 1);
+        PRINT ('Error: Estado inválido.', 16, 1);
         RETURN;
     END
 
@@ -392,7 +392,7 @@ AS
 BEGIN
     IF @Cantidad <= 0
     BEGIN
-        RAISERROR ('Error: Cantidad debe ser mayor a cero.', 16, 1);
+        PRINT ('Error: Cantidad debe ser mayor a cero.', 16, 1);
         RETURN;
     END
 
@@ -420,7 +420,7 @@ AS
 BEGIN
     IF @Cantidad <= 0
     BEGIN
-        RAISERROR ('Error: Cantidad debe ser mayor a cero.', 16, 1);
+        PRINT ('Error: Cantidad debe ser mayor a cero.', 16, 1);
         RETURN;
     END
 
@@ -445,7 +445,7 @@ BEGIN
 
     IF IS_MEMBER('Supervisor') = 0
     BEGIN
-        RAISERROR('Error: Solo los Supervisores pueden generar una nota de crédito.', 16, 1);
+        PRINT('Error: Solo los Supervisores pueden generar una nota de crédito.', 16, 1);
         RETURN;
     END
 
@@ -477,12 +477,12 @@ BEGIN
         END TRY
         BEGIN CATCH
             ROLLBACK TRANSACTION;
-            RAISERROR('Error al crear la nota de crédito o al actualizar el detalle de la factura.', 16, 1);
+            PRINT('Error al crear la nota de crédito o al actualizar el detalle de la factura.', 16, 1);
         END CATCH;
     END
     ELSE
     BEGIN
-        RAISERROR('Error: No existe una factura con el producto especificado para el cliente.', 16, 1);
+        PRINT('Error: No existe una factura con el producto especificado para el cliente.', 16, 1);
     END
 END;
 GO
