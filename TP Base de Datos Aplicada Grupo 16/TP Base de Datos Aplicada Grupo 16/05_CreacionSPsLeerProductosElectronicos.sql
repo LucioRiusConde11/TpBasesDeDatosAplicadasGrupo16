@@ -41,7 +41,7 @@ BEGIN
         EXEC sp_executesql @sql;
 
         -- Verificar la carga
-        SELECT * FROM #ProductosTemp;
+        --SELECT * FROM #ProductosTemp;
 
 		-- Obtener valor del dolar
 		IF NOT EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE Categoria = 'Electronico' AND LineaProducto = 'Accesorio')

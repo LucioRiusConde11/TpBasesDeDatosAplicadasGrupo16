@@ -339,8 +339,10 @@ BEGIN
         RETURN;
     END
 
-    INSERT INTO ventas.Factura (FechaHora, Estado, ID_Cliente, ID_Empleado, ID_Sucursal, ID_MedioPago, id_factura_importado)
-    VALUES (@FechaHora, @Estado, @ID_Cliente, @ID_Empleado, @ID_Sucursal, @ID_MedioPago, @id_factura_importado);
+    INSERT INTO ventas.Factura (FechaHora, Estado, --ID_Cliente,
+	ID_Empleado, ID_Sucursal, ID_MedioPago, id_factura_importado)
+    VALUES (@FechaHora, @Estado, --@ID_Cliente,
+	@ID_Empleado, @ID_Sucursal, @ID_MedioPago, @id_factura_importado);
 END;
 GO
 
@@ -372,7 +374,7 @@ BEGIN
     UPDATE ventas.Factura
     SET FechaHora = @FechaHora,
         Estado = @Estado,
-        ID_Cliente = @ID_Cliente,
+        --ID_Cliente = @ID_Cliente,
         ID_Empleado = @ID_Empleado,
         ID_Sucursal = @ID_Sucursal,
         ID_MedioPago = @ID_MedioPago,
@@ -455,7 +457,7 @@ BEGIN
         FROM ventas.Factura AS f
         JOIN ventas.DetalleFactura AS df ON f.ID = df.ID_Factura
         WHERE f.ID = @ID_Factura 
-          AND f.ID_Cliente = @ID_Cliente
+          --AND f.ID_Cliente = @ID_Cliente
           AND df.ID_Producto = @ID_Producto
 		  AND f.Estado = 'Pagada' 
     )

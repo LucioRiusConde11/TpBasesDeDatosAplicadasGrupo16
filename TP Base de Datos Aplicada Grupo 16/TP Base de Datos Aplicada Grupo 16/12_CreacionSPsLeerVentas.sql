@@ -1,7 +1,7 @@
 USE Com2900G16
 GO
 
-CREATE OR ALTER PROCEDURE [catalogo].[importarVentasCsv]
+CREATE OR ALTER PROCEDURE [ventas].[importarVentasCsv]
     @FilePath NVARCHAR(255) 
 AS
 BEGIN
@@ -42,22 +42,31 @@ BEGIN
         EXEC sp_executesql @sql;
 
         -- Seleccionar los datos de la tabla temporal para verificación
-        --SELECT * FROM #tmp_ventas
+        --SELECT DISTINCT Producto FROM #tmp_ventas
 
 		--tratamiento fecha
 		UPDATE #tmp_ventas
 		SET Fecha = Fecha + ' ' + Hora
 
-		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago)
+		UPDATE #tmp_ventas
+		SET Producto = catalogo.fnNormalizar(Producto)
+		/*
+		SELECT *
+			FROM #tmp_ventas
+			WHERE Producto LIKE '%Â%' OR Producto LIKE '%Ã%' OR Producto LIKE '%å%'
+
+		*/
+		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago, ID_Sucursal)
 		(
 		SELECT tmp.ID_FACTURA,
 			   CASE
 					WHEN ISDATE(tmp.Fecha) = 1 THEN CONVERT(DATETIME, tmp.Fecha, 103)
 					ELSE CONVERT(DATETIME, tmp.Fecha, 101)
 			   END,
-			   'Aprobada',
+			   'Pagada',
 			   (SELECT e.ID FROM tienda.Empleado e WHERE e.Legajo = tmp.Legajo_Empleado COLLATE Modern_Spanish_CI_AS),
-			   (SELECT m.ID FROM ventas.MedioPago m WHERE tmp.Medio_De_Pago = m.Descripcion_ENG  COLLATE Modern_Spanish_CI_AS OR tmp.Medio_De_Pago = m.Descripcion_ESP COLLATE Modern_Spanish_CI_AS)
+			   (SELECT m.ID FROM ventas.MedioPago m WHERE tmp.Medio_De_Pago = m.Descripcion_ENG  COLLATE Modern_Spanish_CI_AS OR tmp.Medio_De_Pago = m.Descripcion_ESP COLLATE Modern_Spanish_CI_AS),
+			   (SELECT s.ID FROM tienda.Sucursal s WHERE s.Ciudad_anterior = tmp.Ciudad)
 			FROM #tmp_ventas tmp
 			WHERE NOT EXISTS 
 			(
@@ -70,15 +79,27 @@ BEGIN
 					(f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS)
 			)
 		)
+		/*
+		SELECT tmp.ID_FACTURA 
+			FROM #tmp_ventas tmp
+			LEFT JOIN ventas.Factura f ON f.id_factura_importado LIKE tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS
+			WHERE f.ID IS NULL;
 
-		INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, TipoCliente, GeneroCliente, IdentificadorPago)
+		SELECT tmp.Producto, tmp.Precio_Unitario
+			FROM #tmp_ventas tmp
+			LEFT JOIN catalogo.Producto p ON p.Nombre = tmp.Producto COLLATE Modern_Spanish_CI_AS 
+										  AND p.PrecioUnitario = tmp.Precio_Unitario
+			WHERE p.ID IS NULL;
+		*/
+		
+		INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IdentificadorPago)
 		(
 			SELECT (SELECT f.ID FROM ventas.Factura f WHERE f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS),
 				   (SELECT p.ID FROM catalogo.Producto p WHERE p.Nombre = tmp.Producto COLLATE Modern_Spanish_CI_AS AND p.PrecioUnitario = tmp.Precio_Unitario),
 				   tmp.Cantidad,
 				   tmp.Precio_Unitario,
-				   tmp.Tipo_De_Cliente,
-				   tmp.Genero,
+				   --tmp.Tipo_De_Cliente,
+				   --tmp.Genero,
 				   tmp.Identificador_Pago
 				FROM #tmp_ventas tmp
 				WHERE NOT EXISTS
@@ -102,7 +123,8 @@ BEGIN
 				)
 				
 		)
-
+		
+		
     END TRY
     BEGIN CATCH
         -- Capturar errores

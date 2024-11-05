@@ -34,7 +34,7 @@ IF OBJECT_ID(N'tienda.Empleado') IS NOT NULL
 
 CREATE TABLE tienda.Empleado (
     ID INT IDENTITY PRIMARY KEY,
-    Legajo VARCHAR(7) UNIQUE,
+    Legajo VARCHAR(6) UNIQUE,
     Nombre VARCHAR(50) NOT NULL,
     Apellido VARCHAR(50),
     DNI VARCHAR(8), 
@@ -45,7 +45,7 @@ CREATE TABLE tienda.Empleado (
     ID_Sucursal INT NOT NULL,
     Estado BIT DEFAULT 1,
     FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
-    CHECK (Legajo LIKE '[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]'), 
+    CHECK (Legajo LIKE '[0-9][0-9][0-9][0-9][0-9][0-9]'), 
     CHECK (DNI LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), 
     CHECK (Mail_Empresa LIKE '%_@__%.__%'), 
     CHECK (CUIL LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'), 
@@ -113,14 +113,14 @@ CREATE TABLE ventas.Factura (
     ID INT IDENTITY PRIMARY KEY,
     FechaHora DATETIME NOT NULL,
     Estado VARCHAR(10),
-    ID_Cliente INT NOT NULL,
+    --ID_Cliente INT NOT NULL,
     ID_Empleado INT NOT NULL,
     ID_Sucursal INT NOT NULL,
     ID_MedioPago INT NOT NULL,
 	id_factura_importado VARCHAR(30),
     FOREIGN KEY (ID_Empleado) REFERENCES tienda.Empleado(ID) ON DELETE NO ACTION,
     FOREIGN KEY (ID_MedioPago) REFERENCES ventas.MedioPago(ID) ON DELETE NO ACTION,
-	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
+	--FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
 	CHECK (Estado IN ('Pagada', 'No pagada'))
 );
