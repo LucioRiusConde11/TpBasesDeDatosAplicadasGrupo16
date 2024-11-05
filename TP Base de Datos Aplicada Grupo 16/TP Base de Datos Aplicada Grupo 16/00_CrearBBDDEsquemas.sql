@@ -28,6 +28,11 @@ BEGIN
 	EXEC('CREATE SCHEMA tienda')
 END
 GO
-
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name =
+'informe')
+BEGIN
+	EXEC('CREATE SCHEMA informe')
+END
+GO
 
 
