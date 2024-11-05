@@ -24,20 +24,30 @@ BEGIN
     OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
     DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 
-	DELETE FROM tienda.Sucursal
-	DBCC CHECKIDENT ('Com2900G16.tienda.Sucursal', RESEED, 0)
-    ALTER TABLE tienda.Empleado DROP CONSTRAINT IF EXISTS CK_Empleado_Legajo;
-    ALTER TABLE tienda.Empleado DROP CONSTRAINT IF EXISTS CK_Empleado_DNI;
-    ALTER TABLE tienda.Empleado DROP CONSTRAINT IF EXISTS CK_Empleado_Mail_Empresa;
-    ALTER TABLE tienda.Empleado DROP CONSTRAINT IF EXISTS CK_Empleado_CUIL;
-    ALTER TABLE tienda.Empleado DROP CONSTRAINT IF EXISTS CK_Empleado_Estado;
+	DECLARE @UltimoID INT;
+	DECLARE @SQL NVARCHAR(100);
+	SELECT @UltimoID = MAX(ID) FROM tienda.Empleado;
 
-    UPDATE tienda.Empleado
-    SET Nombre = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), Nombre),
-        Apellido = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), Apellido),
-        DNI = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), DNI),
-        CUIL = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), CUIL),
-        Mail_Empresa = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), Mail_Empresa);
+	IF OBJECT_ID(N'tienda.EmpleadoEncript') IS NOT NULL
+		DROP TABLE tienda.Cliente;
+
+	CREATE TABLE tienda.EmpleadoEncript (
+    ID INT IDENTITY PRIMARY KEY,
+    Legajo VARCHAR(6) UNIQUE,
+    Nombre VARBINARY(255) NOT NULL,
+    Apellido VARBINARY(255),
+    DNI VARBINARY(255), 
+    Mail_Empresa VARBINARY(255),
+    CUIL VARBINARY(255),
+    Cargo VARCHAR(50),
+    Turno VARCHAR(25),
+    ID_Sucursal INT NOT NULL,
+    Estado BIT DEFAULT 1,
+    FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE CASCADE
+	);
+	SET @SQL = 'DBCC CHECKIDENT (''tienda.EmpleadoEncript'', RESEED, ' + CAST(@UltimoID AS NVARCHAR(10)) + ');';
+	EXEC sp_executesql @SQL;
+
 
     CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
 END;
@@ -56,11 +66,9 @@ CREATE OR ALTER PROCEDURE tienda.AltaEmpleado
     @Estado BIT = 1
 AS
 BEGIN
-    -- Abrir la clave sim?trica
     OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
     DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 
-    -- Validaci?n: verificar si el Legajo ya existe
     IF EXISTS (SELECT 1 FROM tienda.Empleado WHERE Legajo = @Legajo)
     BEGIN
         PRINT ('Error: El legajo del empleado ya existe.');
@@ -68,8 +76,7 @@ BEGIN
         RETURN;
     END
 
-    -- Insertar el nuevo empleado con encriptaci?n
-    INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
+    INSERT INTO tienda.EmpleadoEncript (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
     VALUES (
         @Legajo,
         ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Nombre),
@@ -83,7 +90,6 @@ BEGIN
         @Estado
     );
 
-    -- Cerrar la clave sim?trica
     CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
 END;
 GO
@@ -102,11 +108,9 @@ CREATE OR ALTER PROCEDURE tienda.ModificarEmpleado
     @Estado BIT = 1
 AS
 BEGIN
-    -- Abrir la clave sim?trica
     OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
     DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 
-    -- Validaci?n: verificar si el Legajo ya existe en otro registro
     IF EXISTS (SELECT 1 FROM tienda.Empleado WHERE Legajo = @Legajo AND ID <> @ID)
     BEGIN
         PRINT ('Error: El legajo del empleado ya existe.');
@@ -114,8 +118,7 @@ BEGIN
         RETURN;
     END
 
-    -- Actualizar los datos del empleado con encriptaci?n
-    UPDATE tienda.Empleado
+    UPDATE tienda.EmpleadoEncript
     SET Legajo = @Legajo,
         Nombre = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Nombre),
         Apellido = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Apellido),
@@ -128,7 +131,6 @@ BEGIN
         Estado = @Estado
     WHERE ID = @ID;
 
-    -- Cerrar la clave sim?trica
     CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
 END;
 GO
@@ -210,7 +212,7 @@ BEGIN
         CONVERT(NVARCHAR(50), DECRYPTBYKEY(Nombre)),
         CONVERT(NVARCHAR(50), DECRYPTBYKEY(Apellido)),
         NULL -- Inicialmente vac?o; se llenar? luego en el ciclo
-    FROM tienda.Empleado
+    FROM tienda.EmpleadoEncript
     WHERE Cargo = 'Supervisor' AND Estado = 1;
 
     CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
