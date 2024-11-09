@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<SqlWorkbenchSqlProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="Com2900G16">
+  <Items>
+    <LogicalFolder Name="Connections" Type="2" Sorted="true">
+      <Items />
+    </LogicalFolder>
+    <LogicalFolder Name="Queries" Type="0" Sorted="true">
+      <Items>
+        <FileNode Name="00_CrearBBDDEsquemas.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>00_CrearBBDDEsquemas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="01_CreacionTablas.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>01_CreacionTablas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="02_CreacionSPsABM.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>02_CreacionSPsABM.sql</FullPath>
+        </FileNode>
+        <FileNode Name="03_CrearSpsImportar.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>03_CrearSpsImportar.sql</FullPath>
+        </FileNode>
+        <FileNode Name="04_CreacionSPAsignarRolSuspervisor.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>04_CreacionSPAsignarRolSuspervisor.sql</FullPath>
+        </FileNode>
+        <FileNode Name="05_CreacionSPsReportes.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>05_CreacionSPsReportes.sql</FullPath>
+        </FileNode>
+        <FileNode Name="06_EncriptarEmpleado.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>06_EncriptarEmpleado.sql</FullPath>
+        </FileNode>
+        <FileNode Name="07_Pruebas.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>07_Pruebas.sql</FullPath>
+        </FileNode>
+      </Items>
+    </LogicalFolder>
+    <LogicalFolder Name="Miscellaneous" Type="3" Sorted="true">
+      <Items />
+    </LogicalFolder>
+  </Items>
+</SqlWorkbenchSqlProject>
