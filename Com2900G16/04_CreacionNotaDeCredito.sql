@@ -1,15 +1,62 @@
 USE Com2900G16;
+
+-- Procedimiento para Generar Nota de Crédito
+GO
+CREATE OR ALTER PROCEDURE ventas.CrearNotaCredito
+    @ID_Factura INT,
+    @ID_Producto INT,
+	@IdCliente INT,
+    @Motivo VARCHAR(255),
+	@PuntoDeVenta CHAR(5),
+	@Comprobante INT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1 
+        FROM ventas.Factura AS f
+        JOIN ventas.DetalleFactura AS df ON f.ID = df.ID_Factura
+        WHERE f.ID = @ID_Factura 
+		  AND f.ID_Cliente = @idCliente
+          AND df.ID_Producto = @ID_Producto
+		  AND f.Estado = 'Pagada' 
+    )
+    BEGIN
+        BEGIN TRANSACTION;
+        
+        BEGIN TRY
+            -- Insertar en la tabla NotaCredito
+            INSERT INTO ventas.NotaCredito (ID_Factura, ID_Cliente, ID_Producto, Motivo,PuntoDeVenta,Comprobante)
+            VALUES (@ID_Factura,@IdCliente, @ID_Producto, @Motivo,@PuntoDeVenta,@Comprobante);
+
+            -- Actualizar el precio unitario en la tabla DetalleFactura para reflejar el reembolso
+            UPDATE ventas.DetalleFactura
+            SET PrecioUnitario = 0
+            WHERE ID_Factura = @ID_Factura
+              AND ID_Producto = @ID_Producto;
+
+            COMMIT TRANSACTION;
+        END TRY
+        BEGIN CATCH
+            ROLLBACK TRANSACTION;
+            PRINT('Error al crear la nota de crédito o al actualizar el detalle de la factura.');
+        END CATCH;
+    END
+    ELSE
+        PRINT('Error: No existe una factura con el producto especificado para el cliente.');
+END;
+GO
+
 GO
 CREATE OR ALTER PROCEDURE ventas.CrearRolSupervisor
 AS  
 BEGIN
-	IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name =
-	'Supervisor')
-	BEGIN
-		EXEC('CREATE ROLE Supervisor');
-	END
-	GRANT EXECUTE ON ventas.CrearNotaCredito TO Supervisor;
-	GRANT SELECT ON schema::ventas TO Supervisor;
+    IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Supervisor')
+    BEGIN
+        EXEC('CREATE ROLE Supervisor');
+    END
+
+    GRANT EXECUTE ON ventas.CrearNotaCredito TO Supervisor;
+    GRANT SELECT ON schema::ventas TO Supervisor;
 END;
 
 GO

@@ -130,7 +130,7 @@ BEGIN
 		INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal)
 		(SELECT tmp.Legajo, tmp.Nombre, tmp.Apellido,
 		DNI, tmp.mail_empresa, CONCAT('23','-',tmp.DNI,'-','4'),
-		tmp.Cargo, tmp.Turno, 
+		tmp.Cargo, CASE TRIM(tmp.Turno) WHEN 'TM' THEN 'TM' WHEN 'TT' THEN 'TT' WHEN 'Jornada completa' THEN 'TC' END , 
 		(SELECT ID FROM tienda.Sucursal WHERE Ciudad = Ciudad_Sucursal COLLATE Modern_Spanish_CI_AS)
 		FROM #tmpEmpleado tmp
 		WHERE tmp.Legajo IS NOT NULL AND NOT EXISTS (SELECT 1 FROM tienda.Empleado e WHERE tmp.Legajo = e.legajo COLLATE Modern_Spanish_CI_AS OR tmp.DNI = e.DNI COLLATE Modern_Spanish_CI_AS))
@@ -673,7 +673,11 @@ BEGIN
 			WHERE Producto LIKE '%Â%' OR Producto LIKE '%Ã%' OR Producto LIKE '%å%'
 
 		*/
-		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago, ID_Sucursal)
+		IF (SELECT COUNT(1) FROM tienda.Cliente) = 0
+			INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado) VALUES ('Juan Perez', 'Member', 'M', 1);	
+
+
+		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago, ID_Sucursal, ID_Cliente)
 		(
 		SELECT tmp.ID_FACTURA,
 			   CASE
@@ -683,7 +687,8 @@ BEGIN
 			   'Pagada',
 			   (SELECT e.ID FROM tienda.Empleado e WHERE e.Legajo = tmp.Legajo_Empleado COLLATE Modern_Spanish_CI_AS),
 			   (SELECT m.ID FROM ventas.MedioPago m WHERE tmp.Medio_De_Pago = m.Descripcion_ENG  COLLATE Modern_Spanish_CI_AS OR tmp.Medio_De_Pago = m.Descripcion_ESP COLLATE Modern_Spanish_CI_AS),
-			   (SELECT s.ID FROM tienda.Sucursal s WHERE s.Ciudad_anterior = tmp.Ciudad)
+			   (SELECT s.ID FROM tienda.Sucursal s WHERE s.Ciudad_anterior = tmp.Ciudad),
+			   (SELECT TOP(1) 1 FROM tienda.Cliente c)
 			FROM #tmp_ventas tmp
 			WHERE NOT EXISTS 
 			(

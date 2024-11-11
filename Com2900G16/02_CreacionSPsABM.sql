@@ -50,14 +50,14 @@ GO
 
 -- Procedimientos para la Tabla Empleado
 CREATE OR ALTER PROCEDURE tienda.AltaEmpleado
-    @Legajo VARCHAR(7),
+    @Legajo CHAR(6),
     @Nombre VARCHAR(50),
     @Apellido VARCHAR(50),
-    @DNI VARCHAR(8),
+    @DNI CHAR(8),
     @Mail_Empresa VARCHAR(100),
     @CUIL VARCHAR(13),
-    @Cargo VARCHAR(50),
-    @Turno VARCHAR(25),
+    @Cargo VARCHAR(20),
+    @Turno CHAR(2),
     @ID_Sucursal INT,
     @Estado BIT = 1
 AS
@@ -83,14 +83,14 @@ GO
 
 CREATE OR ALTER PROCEDURE tienda.ModificarEmpleado
     @ID INT,
-    @Legajo VARCHAR(7),
+    @Legajo CHAR(6),
     @Nombre VARCHAR(50),
     @Apellido VARCHAR(50),
-    @DNI VARCHAR(8),
+    @DNI CHAR(8),
     @Mail_Empresa VARCHAR(100),
     @CUIL VARCHAR(13),
-    @Cargo VARCHAR(50),
-    @Turno VARCHAR(25),
+    @Cargo VARCHAR(20),
+    @Turno CHAR(2),
     @ID_Sucursal INT,
     @Estado BIT = 1
 AS
@@ -120,7 +120,7 @@ GO
 CREATE OR ALTER PROCEDURE tienda.AltaCliente
     @Nombre VARCHAR(100),
     @TipoCliente VARCHAR(6),
-    @Genero VARCHAR(6),
+    @Genero CHAR(1),
     @Estado BIT = 1
 AS
 BEGIN
@@ -153,7 +153,7 @@ CREATE OR ALTER PROCEDURE tienda.ModificarCliente
     @ID INT,
     @Nombre VARCHAR(100),
     @TipoCliente VARCHAR(6),
-    @Genero VARCHAR(6),
+    @Genero CHAR(1),
     @Estado BIT = 1
 AS
 BEGIN
@@ -330,7 +330,9 @@ CREATE OR ALTER PROCEDURE ventas.AltaFactura
     @ID_Empleado INT,
     @ID_Sucursal INT,
     @ID_MedioPago INT,
-    @id_factura_importado VARCHAR(30) = NULL
+    @id_factura_importado VARCHAR(30) = NULL,
+	@PuntoDeVenta CHAR(5),
+	@Comprobante INT
 AS
 BEGIN
     IF @Estado NOT IN ('Pagada', 'No pagada')
@@ -339,10 +341,10 @@ BEGIN
         RETURN;
     END
 
-    INSERT INTO ventas.Factura (FechaHora, Estado, --ID_Cliente,
-	ID_Empleado, ID_Sucursal, ID_MedioPago, id_factura_importado)
-    VALUES (@FechaHora, @Estado, --@ID_Cliente,
-	@ID_Empleado, @ID_Sucursal, @ID_MedioPago, @id_factura_importado);
+    INSERT INTO ventas.Factura (FechaHora, Estado, ID_Cliente,
+	ID_Empleado, ID_Sucursal, ID_MedioPago, id_factura_importado, PuntoDeVenta, Comprobante)
+    VALUES (@FechaHora, @Estado, @ID_Cliente,
+	@ID_Empleado, @ID_Sucursal, @ID_MedioPago, @id_factura_importado,@PuntoDeVenta,@Comprobante);
 END;
 GO
 
@@ -362,7 +364,9 @@ CREATE OR ALTER PROCEDURE ventas.ModificarFactura
     @ID_Empleado INT,
     @ID_Sucursal INT,
     @ID_MedioPago INT,
-    @id_factura_importado VARCHAR(30) = NULL
+    @id_factura_importado VARCHAR(30) = NULL,
+	@PuntoDeVenta CHAR(5),
+	@Comprobante INT
 AS
 BEGIN
     IF @Estado NOT IN ('Pagada', 'No pagada')
@@ -374,11 +378,13 @@ BEGIN
     UPDATE ventas.Factura
     SET FechaHora = @FechaHora,
         Estado = @Estado,
-        --ID_Cliente = @ID_Cliente,
+        ID_Cliente = @ID_Cliente,
         ID_Empleado = @ID_Empleado,
         ID_Sucursal = @ID_Sucursal,
         ID_MedioPago = @ID_MedioPago,
-        id_factura_importado = @id_factura_importado
+        id_factura_importado = @id_factura_importado,
+		PuntoDeVenta = @PuntoDeVenta,
+		Comprobante = @Comprobante
     WHERE ID = @ID;
 END;
 GO
@@ -436,55 +442,37 @@ BEGIN
 END;
 GO
 
--- Procedimiento para Generar Nota de Crédito
-CREATE OR ALTER PROCEDURE ventas.CrearNotaCredito
-    @ID_Factura INT,
-    @ID_Cliente INT,
-    @ID_Producto INT,
-    @Motivo VARCHAR(255)
+CREATE OR ALTER PROCEDURE LimpiarTodasLasTablas
 AS
 BEGIN
+    IF OBJECT_ID('ventas.DetalleFactura') IS NOT NULL
+        DELETE FROM ventas.DetalleFactura;
 
-    IF IS_MEMBER('Supervisor') = 0
-    BEGIN
-        PRINT('Error: Solo los Supervisores pueden generar una nota de crédito.');
-        RETURN;
-    END
+    IF OBJECT_ID('ventas.NotaCredito') IS NOT NULL
+        DELETE FROM ventas.NotaCredito;
 
-    -- Verificar que exista la factura para el cliente con el producto específico
-    IF EXISTS (
-        SELECT 1 
-        FROM ventas.Factura AS f
-        JOIN ventas.DetalleFactura AS df ON f.ID = df.ID_Factura
-        WHERE f.ID = @ID_Factura 
-          --AND f.ID_Cliente = @ID_Cliente
-          AND df.ID_Producto = @ID_Producto
-		  AND f.Estado = 'Pagada' 
-    )
-    BEGIN
-        BEGIN TRANSACTION;
-        
-        BEGIN TRY
-            -- Insertar en la tabla NotaCredito
-            INSERT INTO ventas.NotaCredito (ID_Factura, ID_Cliente, ID_Producto, Motivo)
-            VALUES (@ID_Factura, @ID_Cliente, @ID_Producto, @Motivo);
+    IF OBJECT_ID('ventas.Factura') IS NOT NULL
+        DELETE FROM ventas.Factura;
 
-            -- Actualizar el precio unitario en la tabla DetalleFactura para reflejar el reembolso
-            UPDATE ventas.DetalleFactura
-            SET PrecioUnitario = 0
-            WHERE ID_Factura = @ID_Factura
-              AND ID_Producto = @ID_Producto;
+    IF OBJECT_ID('catalogo.Producto') IS NOT NULL
+        DELETE FROM catalogo.Producto;
 
-            COMMIT TRANSACTION;
-        END TRY
-        BEGIN CATCH
-            ROLLBACK TRANSACTION;
-            PRINT('Error al crear la nota de crédito o al actualizar el detalle de la factura.');
-        END CATCH;
-    END
-    ELSE
-    BEGIN
-        PRINT('Error: No existe una factura con el producto especificado para el cliente.');
-    END
+    IF OBJECT_ID('tienda.Empleado') IS NOT NULL
+        DELETE FROM tienda.Empleado;
+
+    IF OBJECT_ID('tienda.Cliente') IS NOT NULL
+        DELETE FROM tienda.Cliente;
+
+    IF OBJECT_ID('ventas.MedioPago') IS NOT NULL
+        DELETE FROM ventas.MedioPago;
+
+    IF OBJECT_ID('catalogo.CategoriaProducto') IS NOT NULL
+        DELETE FROM catalogo.CategoriaProducto;
+
+    IF OBJECT_ID('tienda.Sucursal') IS NOT NULL
+        DELETE FROM tienda.Sucursal;
+
+    PRINT 'Limpieza de todas las tablas completada.';
 END;
 GO
+

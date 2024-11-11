@@ -1,12 +1,29 @@
 USE Com2900G16;
 GO
-CREATE OR ALTER PROCEDURE EncriptarEmpleado
+CREATE OR ALTER PROCEDURE tienda.EliminarTablasEmpleado
+AS
+BEGIN
+
+    IF OBJECT_ID(N'ventas.DetalleFactura') IS NOT NULL
+        DROP TABLE ventas.DetalleFactura;
+
+    IF OBJECT_ID(N'ventas.NotaCredito') IS NOT NULL
+        DROP TABLE ventas.NotaCredito;
+
+    IF OBJECT_ID(N'ventas.Factura') IS NOT NULL
+        DROP TABLE ventas.Factura;
+
+    IF OBJECT_ID(N'tienda.Empleado') IS NOT NULL
+        DROP TABLE tienda.Empleado;
+    PRINT 'Eliminación de tablas completada.';
+END;
+GO
+
+CREATE OR ALTER PROCEDURE tienda.EncriptarEmpleado
 AS
 BEGIN
     IF NOT EXISTS (SELECT * FROM sys.symmetric_keys WHERE name = '##MS_DatabaseMasterKey##')
-    BEGIN
         CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password123!';
-    END;
 
     IF NOT EXISTS (SELECT * FROM sys.certificates WHERE name = 'CertificadoEmpleado')
     BEGIN
@@ -24,32 +41,67 @@ BEGIN
     OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
     DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 
-	DECLARE @UltimoID INT;
-	DECLARE @SQL NVARCHAR(100);
-	SELECT @UltimoID = MAX(ID) FROM tienda.Empleado;
+	EXEC tienda.EliminarTablasEmpleado;
 
-	IF OBJECT_ID(N'tienda.EmpleadoEncript') IS NOT NULL
-		DROP TABLE tienda.Cliente;
-
-	CREATE TABLE tienda.EmpleadoEncript (
-    ID INT IDENTITY PRIMARY KEY,
-    Legajo VARCHAR(6) UNIQUE,
-    Nombre VARBINARY(255) NOT NULL,
-    Apellido VARBINARY(255),
-    DNI VARBINARY(255), 
-    Mail_Empresa VARBINARY(255),
-    CUIL VARBINARY(255),
-    Cargo VARCHAR(50),
-    Turno VARCHAR(25),
-    ID_Sucursal INT NOT NULL,
-    Estado BIT DEFAULT 1,
-    FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE CASCADE
+	CREATE TABLE tienda.Empleado (
+	   ID INT IDENTITY PRIMARY KEY,
+	   Legajo VARCHAR(6) UNIQUE,
+	   Nombre VARBINARY(255) NOT NULL,
+	   Apellido VARBINARY(255),
+	   DNI VARBINARY(255), 
+	   Mail_Empresa VARBINARY(255),
+	   CUIL VARBINARY(255),
+	   Cargo VARCHAR(20),
+	   Turno CHAR(2),
+	   ID_Sucursal INT NOT NULL,
+	   Estado BIT DEFAULT 1,
+	   FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE  NO ACTION
 	);
-	SET @SQL = 'DBCC CHECKIDENT (''tienda.EmpleadoEncript'', RESEED, ' + CAST(@UltimoID AS NVARCHAR(10)) + ');';
-	EXEC sp_executesql @SQL;
+	   CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
 
+	CREATE TABLE ventas.Factura (
+	    ID INT IDENTITY PRIMARY KEY,
+	    FechaHora DATETIME NOT NULL,
+	    Estado VARCHAR(10),
+	    ID_Cliente INT NOT NULL,
+	    ID_Empleado INT NOT NULL,
+	    ID_Sucursal INT NOT NULL,
+	    ID_MedioPago INT NOT NULL,
+		id_factura_importado VARCHAR(30),
+		PuntoDeVenta CHAR(5) NOT NULL,
+		Comprobante INT NOT NULL,
+	    FOREIGN KEY (ID_Empleado) REFERENCES tienda.Empleado(ID) ON DELETE NO ACTION,
+	    FOREIGN KEY (ID_MedioPago) REFERENCES ventas.MedioPago(ID) ON DELETE NO ACTION,
+		FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
+		FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
+		CHECK (Estado IN ('Pagada', 'No pagada'))
+	);
+	
+	CREATE TABLE ventas.DetalleFactura (
+	    ID INT IDENTITY PRIMARY KEY,
+	    ID_Factura INT NOT NULL,
+	    ID_Producto INT NOT NULL,
+	    Cantidad INT NOT NULL,
+	    PrecioUnitario DECIMAL(10, 2) NOT NULL,
+		IdentificadorPago VARCHAR(30),
+	    FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE CASCADE,
+	    FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
+	);
 
-    CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
+	CREATE TABLE ventas.NotaCredito (
+	    ID INT IDENTITY PRIMARY KEY,
+	    ID_Factura INT NOT NULL,
+		ID_Cliente INT NOT NULL,
+		ID_Producto INT NOT NULL,
+	    FechaEmision DATETIME DEFAULT GETDATE(),
+	    Motivo VARCHAR(255),
+		PuntoDeVenta CHAR(5) NOT NULL,
+		Comprobante INT NOT NULL,
+	    FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE NO ACTION,
+		FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
+		FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
+	);
+
 END;
 GO
 
@@ -76,7 +128,7 @@ BEGIN
         RETURN;
     END
 
-    INSERT INTO tienda.EmpleadoEncript (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
+    INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
     VALUES (
         @Legajo,
         ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Nombre),
@@ -118,7 +170,7 @@ BEGIN
         RETURN;
     END
 
-    UPDATE tienda.EmpleadoEncript
+    UPDATE tienda.Empleado
     SET Legajo = @Legajo,
         Nombre = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Nombre),
         Apellido = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Apellido),
@@ -134,122 +186,4 @@ BEGIN
     CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
 END;
 GO
-CREATE OR ALTER PROCEDURE ventas.CrearUsuariosSupervisores
-AS
-BEGIN
-    DECLARE @NombreUsuario NVARCHAR(100);
-    DECLARE @Password NVARCHAR(50) = 'Password123!'; 
-    DECLARE @Contador INT = 1;
 
-    -- Crear una tabla temporal para almacenar los nombres de usuario de los Supervisores
-    CREATE TABLE #Supervisores  (
-        ID INT IDENTITY(1,1),
-        NombreUsuario NVARCHAR(100)
-    );
-
-    -- Insertar en la tabla temporal los nombres de usuario de los empleados con cargo 'Supervisor'
-    INSERT INTO #Supervisores (NombreUsuario)
-    SELECT Nombre + Apellido
-    FROM tienda.Empleado
-    WHERE Cargo = 'Supervisor' AND Estado = 1;
-
-    -- Iniciar el ciclo
-    WHILE @Contador <= (SELECT COUNT(*) FROM #Supervisores)
-    BEGIN
-        -- Obtener el nombre de usuario en base al ID actual
-        SELECT @NombreUsuario = NombreUsuario
-        FROM #Supervisores
-        WHERE ID = @Contador;
-
-        BEGIN TRY
-            IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = @NombreUsuario)
-            BEGIN
-                EXEC('CREATE LOGIN ' + @NombreUsuario + ' WITH PASSWORD = ''' + @Password + ''', 
-				DEFAULT_DATABASE=Com2900G16,CHECK_EXPIRATION=OFF,CHECK_POLICY=OFF;');
-				PRINT ('Login creado:'+ @NombreUsuario);
-            END
-
-            IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @NombreUsuario)
-            BEGIN
-                EXEC('CREATE USER ' + @NombreUsuario + ' FOR LOGIN ' + @NombreUsuario + ';');
-				PRINT ('User asociado a login:'+ @NombreUsuario);
-            END
-
-            EXEC('ALTER ROLE Supervisor ADD MEMBER ' + @NombreUsuario + ';');
-			PRINT ('Rol asignado:'+ @NombreUsuario);
-
-        END TRY
-        BEGIN CATCH
-            PRINT ('Error al crear o asignar el usuario'+ @NombreUsuario);
-        END CATCH;
-        SET @Contador = @Contador + 1;
-    END
-END;
-
-GO
-
-CREATE OR ALTER PROCEDURE ventas.CrearUsuariosSupervisores
-AS
-BEGIN
-    DECLARE @Nombre NVARCHAR(50);
-    DECLARE @Apellido NVARCHAR(50);
-    DECLARE @NombreUsuario NVARCHAR(100);
-    DECLARE @Password NVARCHAR(50) = 'Password123!';
-    DECLARE @Contador INT = 1;
-
-    CREATE TABLE #Supervisores (
-        ID INT IDENTITY(1,1),
-        Nombre NVARCHAR(50),
-        Apellido NVARCHAR(50),
-        NombreUsuario NVARCHAR(100)
-    );
-
-    OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
-    DECRYPTION BY CERTIFICATE CertificadoEmpleado;
-
-    INSERT INTO #Supervisores (Nombre, Apellido, NombreUsuario)
-    SELECT 
-        CONVERT(NVARCHAR(50), DECRYPTBYKEY(Nombre)),
-        CONVERT(NVARCHAR(50), DECRYPTBYKEY(Apellido)),
-        NULL -- Inicialmente vac?o; se llenar? luego en el ciclo
-    FROM tienda.EmpleadoEncript
-    WHERE Cargo = 'Supervisor' AND Estado = 1;
-
-    CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
-
-    UPDATE #Supervisores
-    SET NombreUsuario = Nombre + Apellido;
-
-    WHILE @Contador <= (SELECT COUNT(*) FROM #Supervisores)
-    BEGIN
-        SELECT @NombreUsuario = NombreUsuario
-        FROM #Supervisores
-        WHERE ID = @Contador;
-
-        BEGIN TRY
-            IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = @NombreUsuario)
-            BEGIN
-                EXEC('CREATE LOGIN ' + @NombreUsuario + ' WITH PASSWORD = ''' + @Password + ''', 
-                    DEFAULT_DATABASE=Com2900G16, CHECK_EXPIRATION=OFF, CHECK_POLICY=OFF;');
-                PRINT ('Login creado: ' + @NombreUsuario);
-            END
-
-      
-            IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = @NombreUsuario)
-            BEGIN
-                EXEC('CREATE USER ' + @NombreUsuario + ' FOR LOGIN ' + @NombreUsuario + ';');
-                PRINT ('Usuario asociado a login: ' + @NombreUsuario);
-            END
-
-      
-            EXEC('ALTER ROLE Supervisor ADD MEMBER ' + @NombreUsuario + ';');
-            PRINT ('Rol asignado: ' + @NombreUsuario);
-
-        END TRY
-        BEGIN CATCH
-            PRINT ('Error al crear o asignar el usuario ' + @NombreUsuario);
-        END CATCH;
-
-	    SET @Contador = @Contador + 1;
-    END
-END;

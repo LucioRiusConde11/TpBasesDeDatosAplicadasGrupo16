@@ -34,14 +34,14 @@ IF OBJECT_ID(N'tienda.Empleado') IS NOT NULL
 
 CREATE TABLE tienda.Empleado (
     ID INT IDENTITY PRIMARY KEY,
-    Legajo VARCHAR(6) UNIQUE,
+    Legajo CHAR(6) UNIQUE,
     Nombre VARCHAR(50) NOT NULL,
     Apellido VARCHAR(50),
-    DNI VARCHAR(8), 
+    DNI CHAR(8), 
     Mail_Empresa VARCHAR(100),
     CUIL VARCHAR(13),
-    Cargo VARCHAR(50),
-    Turno VARCHAR(25),
+    Cargo VARCHAR(20),
+    Turno CHAR(2),
     ID_Sucursal INT NOT NULL,
     Estado BIT DEFAULT 1,
     FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
@@ -60,10 +60,10 @@ CREATE TABLE tienda.Cliente (--Me parece que es relevante poner al cliente, no q
     ID INT IDENTITY PRIMARY KEY,
     Nombre VARCHAR(100) NOT NULL,
     TipoCliente VARCHAR(6) NOT NULL,
-    Genero VARCHAR(6) NOT NULL,
+    Genero CHAR(1) NOT NULL, --Cambió
     Estado BIT DEFAULT 1,
 	CHECK (TipoCliente IN ('Member', 'Normal')),
-	CHECK (Genero IN ('Female', 'Male'))
+	CHECK (Genero IN ('F', 'M'))--Cambió
 );
 
 -- Creación de la tabla Linea Producto
@@ -113,14 +113,16 @@ CREATE TABLE ventas.Factura (
     ID INT IDENTITY PRIMARY KEY,
     FechaHora DATETIME NOT NULL,
     Estado VARCHAR(10),
-    --ID_Cliente INT NOT NULL,
+    ID_Cliente INT NOT NULL, --Cambió
     ID_Empleado INT NOT NULL,
     ID_Sucursal INT NOT NULL,
     ID_MedioPago INT NOT NULL,
+	PuntoDeVenta CHAR(5) NOT NULL,--Cambió
+	Comprobante INT NOT NULL,--Cambió
 	id_factura_importado VARCHAR(30),
     FOREIGN KEY (ID_Empleado) REFERENCES tienda.Empleado(ID) ON DELETE NO ACTION,
     FOREIGN KEY (ID_MedioPago) REFERENCES ventas.MedioPago(ID) ON DELETE NO ACTION,
-	--FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
+	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
 	CHECK (Estado IN ('Pagada', 'No pagada'))
 );
@@ -144,13 +146,15 @@ CREATE TABLE ventas.DetalleFactura (
 IF OBJECT_ID(N'ventas.NotaCredito') IS NOT NULL
     DROP TABLE ventas.NotaCredito;
 
-CREATE TABLE ventas.NotaCredito (--Un cliente realiza una nota de credito por un producto de la compra que hizo
+CREATE TABLE ventas.NotaCredito (
     ID INT IDENTITY PRIMARY KEY,
     ID_Factura INT NOT NULL,
-	ID_Cliente INT NOT NULL,
+	ID_Cliente INT NOT NULL, 
 	ID_Producto INT NOT NULL,
     FechaEmision DATETIME DEFAULT GETDATE(),
-    Motivo VARCHAR(255),
+    Motivo VARCHAR(255), --Cambió
+	PuntoDeVenta CHAR(5) NOT NULL,--Cambió
+	Comprobante INT NOT NULL,
     FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
