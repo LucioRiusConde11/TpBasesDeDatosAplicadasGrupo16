@@ -20,5 +20,3 @@ DECLARE @rutaVentas NVARCHAR(256) = 'C:\Ventas_registradas.csv'
 --Importacion Ventas
 --EXEC ventas.ImportarMediosDePago @rutaInfoComplementaria
 --EXEC ventas.importarVentasCsv @rutaVentas
-
-

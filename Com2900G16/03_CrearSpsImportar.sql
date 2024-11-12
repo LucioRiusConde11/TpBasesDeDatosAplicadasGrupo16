@@ -2,8 +2,8 @@
 
 /*
 --Alumnos
-<
-<
+<Avella Mateo, 45318319
+<Rius Conde Lucio, 41779534
 <
 
 GRUPO 16
@@ -89,11 +89,6 @@ CREATE OR ALTER PROCEDURE tienda.ImportarEmpleados
 AS
 BEGIN
     BEGIN TRY
-        -- Configurar opciones avanzadas
-        EXEC sp_configure 'show advanced options', 1;
-        RECONFIGURE;
-        EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
-        RECONFIGURE;
 
         IF OBJECT_ID('tempdb..#tmpEmpleado') IS NOT NULL
             DROP TABLE #tmpEmpleado;
@@ -153,10 +148,6 @@ CREATE OR ALTER PROCEDURE [catalogo].[ImportarCategoriaProducto]
 	@FilePath NVARCHAR(255)
 AS
 BEGIN
-		EXEC sp_configure 'show advanced options', 1;
-        RECONFIGURE;	
-        EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
-        RECONFIGURE;
 	
 
 	BEGIN TRY 
@@ -365,11 +356,7 @@ CREATE OR ALTER PROCEDURE catalogo.ImportarDesdeExcel
 AS
 BEGIN
     BEGIN TRY
-        -- Configurar opciones avanzadas
-        EXEC sp_configure 'show advanced options', 1;
-        RECONFIGURE;
-        EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
-        RECONFIGURE;
+
 
         -- Crear tabla temporal para importar los datos
         IF OBJECT_ID('tempdb..#ProductosTemp') IS NOT NULL

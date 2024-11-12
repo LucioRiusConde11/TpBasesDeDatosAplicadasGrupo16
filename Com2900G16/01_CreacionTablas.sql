@@ -1,20 +1,30 @@
 USE Com2900G16;
 GO
 /*
-Reportes:
-	El sistema debe ofrecer los siguientes reportes en xml.
-	Mensual: ingresando un mes y año determinado mostrar el total facturado por días de
-	la semana, incluyendo sábado y domingo.
-	Trimestral: mostrar el total facturado por turnos de trabajo por mes.
-	Por rango de fechas: ingresando un rango de fechas a demanda, debe poder mostrar
-	la cantidad de productos vendidos en ese rango, ordenado de mayor a menor.
-	Por rango de fechas: ingresando un rango de fechas a demanda, debe poder mostrar
-	la cantidad de productos vendidos en ese rango por sucursal, ordenado de mayor a
-	menor.
-	Mostrar los 5 productos más vendidos en un mes, por semana
-	Mostrar los 5 productos menos vendidos en el mes.
-	Mostrar total acumulado de ventas (o sea tambien mostrar el detalle) para una fecha
-	y sucursal particulares
+--Alumnos
+<Avella Mateo, 45318319
+<Rius Conde Lucio, 41779534
+<
+
+GRUPO 16
+ENTREGA: 05/11/24
+
+Se requiere que importe toda la información antes mencionada a la base de datos:
+	• Genere los objetos necesarios (store procedures, funciones, etc.) para importar los
+	archivos antes mencionados. Tenga en cuenta que cada mes se recibirán archivos de
+	novedades con la misma estructura, pero datos nuevos para agregar a cada maestro.
+	• Considere este comportamiento al generar el código. Debe admitir la importación de
+	novedades periódicamente.
+	• Cada maestro debe importarse con un SP distinto. No se aceptarán scripts que
+	realicen tareas por fuera de un SP.
+	• La estructura/esquema de las tablas a generar será decisión suya. Puede que deba
+	realizar procesos de transformación sobre los maestros recibidos para adaptarlos a la
+	estructura requerida.
+	• Los archivos CSV/JSON no deben modificarse. En caso de que haya datos mal
+	cargados, incompletos, erróneos, etc., deberá contemplarlo y realizar las correcciones
+	en el fuente SQL. (Sería una excepción si el archivo está malformado y no es posible
+	interpretarlo como JSON o CSV). 
+
 */
 
 -- Creación de la tabla Sucursal
@@ -22,7 +32,7 @@ IF OBJECT_ID(N'tienda.Sucursal') IS NOT NULL
 	DROP TABLE tienda.Sucursal;
 
 CREATE TABLE tienda.Sucursal (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     Direccion VARCHAR(100) NOT NULL UNIQUE,
     Ciudad VARCHAR(50) NOT NULL,
 	Ciudad_anterior VARCHAR(50)
@@ -33,7 +43,7 @@ IF OBJECT_ID(N'tienda.Empleado') IS NOT NULL
 	DROP TABLE tienda.Empleado;
 
 CREATE TABLE tienda.Empleado (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     Legajo CHAR(6) UNIQUE,
     Nombre VARCHAR(50) NOT NULL,
     Apellido VARCHAR(50),
@@ -57,7 +67,7 @@ IF OBJECT_ID(N'tienda.Cliente') IS NOT NULL
 	DROP TABLE tienda.Cliente;
 
 CREATE TABLE tienda.Cliente (--Me parece que es relevante poner al cliente, no queda tan bien que solo sea un atributo
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     Nombre VARCHAR(100) NOT NULL,
     TipoCliente VARCHAR(6) NOT NULL,
     Genero CHAR(1) NOT NULL, --Cambió
@@ -71,7 +81,7 @@ IF OBJECT_ID(N'catalogo.CategoriaProducto') IS NOT NULL
 	DROP TABLE catalogo.CategoriaProducto;
 
 CREATE TABLE catalogo.CategoriaProducto (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
 	LineaProducto VARCHAR(40),
 	Categoria VARCHAR(100) NOT NULL UNIQUE
 );
@@ -81,7 +91,7 @@ IF OBJECT_ID(N'catalogo.Producto') IS NOT NULL
 	DROP TABLE catalogo.Producto;
 
 CREATE TABLE catalogo.Producto (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     Nombre VARCHAR(100) NOT NULL,
     ID_Categoria INT,
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
@@ -100,7 +110,7 @@ IF OBJECT_ID(N'ventas.MedioPago') IS NOT NULL
 	DROP TABLE ventas.MedioPago;
 
 CREATE TABLE ventas.MedioPago (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     Descripcion_ESP VARCHAR(50) NOT NULL UNIQUE,
 	Descripcion_ENG VARCHAR(50) NOT NULL UNIQUE
 );
@@ -110,7 +120,7 @@ IF OBJECT_ID(N'ventas.Factura') IS NOT NULL
 	DROP TABLE ventas.Factura;
 
 CREATE TABLE ventas.Factura (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     FechaHora DATETIME NOT NULL,
     Estado VARCHAR(10),
     ID_Cliente INT NOT NULL, --Cambió
@@ -132,7 +142,7 @@ IF OBJECT_ID(N'ventas.DetalleFactura') IS NOT NULL
 	DROP TABLE ventas.DetalleFactura;
 
 CREATE TABLE ventas.DetalleFactura (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     ID_Factura INT NOT NULL,
     ID_Producto INT NOT NULL,
     Cantidad INT NOT NULL,
@@ -147,7 +157,7 @@ IF OBJECT_ID(N'ventas.NotaCredito') IS NOT NULL
     DROP TABLE ventas.NotaCredito;
 
 CREATE TABLE ventas.NotaCredito (
-    ID INT IDENTITY PRIMARY KEY,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
     ID_Factura INT NOT NULL,
 	ID_Cliente INT NOT NULL, 
 	ID_Producto INT NOT NULL,

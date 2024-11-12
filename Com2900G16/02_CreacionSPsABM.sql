@@ -1,3 +1,29 @@
+/*
+--Alumnos
+<Avella Mateo, 45318319
+<Rius Conde Lucio, 41779534
+<
+
+GRUPO 16
+ENTREGA: 05/11/24
+
+Se requiere que importe toda la información antes mencionada a la base de datos:
+	• Genere los objetos necesarios (store procedures, funciones, etc.) para importar los
+	archivos antes mencionados. Tenga en cuenta que cada mes se recibirán archivos de
+	novedades con la misma estructura, pero datos nuevos para agregar a cada maestro.
+	• Considere este comportamiento al generar el código. Debe admitir la importación de
+	novedades periódicamente.
+	• Cada maestro debe importarse con un SP distinto. No se aceptarán scripts que
+	realicen tareas por fuera de un SP.
+	• La estructura/esquema de las tablas a generar será decisión suya. Puede que deba
+	realizar procesos de transformación sobre los maestros recibidos para adaptarlos a la
+	estructura requerida.
+	• Los archivos CSV/JSON no deben modificarse. En caso de que haya datos mal
+	cargados, incompletos, erróneos, etc., deberá contemplarlo y realizar las correcciones
+	en el fuente SQL. (Sería una excepción si el archivo está malformado y no es posible
+	interpretarlo como JSON o CSV). 
+
+*/
 USE Com2900G16;
 GO
 
@@ -130,7 +156,7 @@ BEGIN
         RETURN;
     END
 
-    IF @Genero NOT IN ('Female', 'Male')
+    IF @Genero NOT IN ('F', 'M')
     BEGIN
         PRINT ('Error: Género inválido.');
         RETURN;
@@ -163,7 +189,7 @@ BEGIN
         RETURN;
     END
 
-    IF @Genero NOT IN ('Female', 'Male')
+    IF @Genero NOT IN ('F', 'M')
     BEGIN
         PRINT ('Error: Género inválido.');
         RETURN;
@@ -442,37 +468,52 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE LimpiarTodasLasTablas
+CREATE OR ALTER PROCEDURE informe.LimpiarTodasLasTablas
 AS
 BEGIN
-    IF OBJECT_ID('ventas.DetalleFactura') IS NOT NULL
-        DELETE FROM ventas.DetalleFactura;
+    SET NOCOUNT ON;
 
-    IF OBJECT_ID('ventas.NotaCredito') IS NOT NULL
-        DELETE FROM ventas.NotaCredito;
+    -- Desactivar restricciones de clave externa en el orden correcto
+    ALTER TABLE ventas.DetalleFactura NOCHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.Factura NOCHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.MedioPago NOCHECK CONSTRAINT ALL;
+    ALTER TABLE tienda.Empleado NOCHECK CONSTRAINT ALL;
+    ALTER TABLE tienda.Cliente NOCHECK CONSTRAINT ALL;
+    ALTER TABLE tienda.Sucursal NOCHECK CONSTRAINT ALL;
+    ALTER TABLE catalogo.Producto NOCHECK CONSTRAINT ALL;
+    ALTER TABLE catalogo.CategoriaProducto NOCHECK CONSTRAINT ALL;
 
-    IF OBJECT_ID('ventas.Factura') IS NOT NULL
-        DELETE FROM ventas.Factura;
+    -- Borrar datos en el orden correcto para evitar conflictos de FK
+    DELETE FROM ventas.DetalleFactura;
+    DELETE FROM ventas.Factura;
+    DELETE FROM ventas.MedioPago;
+    DELETE FROM tienda.Empleado;
+    DELETE FROM tienda.Cliente;
+    DELETE FROM tienda.Sucursal;
+    DELETE FROM catalogo.Producto;
+    DELETE FROM catalogo.CategoriaProducto;
 
-    IF OBJECT_ID('catalogo.Producto') IS NOT NULL
-        DELETE FROM catalogo.Producto;
+    -- Reiniciar los contadores IDENTITY en cada tabla
+    DBCC CHECKIDENT ('ventas.DetalleFactura', RESEED, 0);
+    DBCC CHECKIDENT ('ventas.Factura', RESEED, 0);
+    DBCC CHECKIDENT ('ventas.MedioPago', RESEED, 0);
+    DBCC CHECKIDENT ('tienda.Empleado', RESEED, 0);
+    DBCC CHECKIDENT ('tienda.Cliente', RESEED, 0);
+    DBCC CHECKIDENT ('tienda.Sucursal', RESEED, 0);
+    DBCC CHECKIDENT ('catalogo.Producto', RESEED, 0);
+    DBCC CHECKIDENT ('catalogo.CategoriaProducto', RESEED, 0);
 
-    IF OBJECT_ID('tienda.Empleado') IS NOT NULL
-        DELETE FROM tienda.Empleado;
+    -- Reactivar las restricciones de clave externa en el orden correcto
+    ALTER TABLE ventas.DetalleFactura WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.Factura WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.MedioPago WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE tienda.Empleado WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE tienda.Cliente WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE tienda.Sucursal WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE catalogo.Producto WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE catalogo.CategoriaProducto WITH CHECK CHECK CONSTRAINT ALL;
 
-    IF OBJECT_ID('tienda.Cliente') IS NOT NULL
-        DELETE FROM tienda.Cliente;
-
-    IF OBJECT_ID('ventas.MedioPago') IS NOT NULL
-        DELETE FROM ventas.MedioPago;
-
-    IF OBJECT_ID('catalogo.CategoriaProducto') IS NOT NULL
-        DELETE FROM catalogo.CategoriaProducto;
-
-    IF OBJECT_ID('tienda.Sucursal') IS NOT NULL
-        DELETE FROM tienda.Sucursal;
-
-    PRINT 'Limpieza de todas las tablas completada.';
+    PRINT 'Todas las tablas han sido vaciadas y los contadores IDENTITY han sido reiniciados.';
 END;
 GO
 
