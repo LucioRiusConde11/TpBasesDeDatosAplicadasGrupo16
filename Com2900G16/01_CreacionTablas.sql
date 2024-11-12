@@ -99,10 +99,6 @@ CREATE TABLE catalogo.Producto (
 	UnidadReferencia VARCHAR(25),
     Fecha DATETIME NOT NULL,
 	FOREIGN KEY (ID_Categoria) REFERENCES catalogo.CategoriaProducto (ID) ON DELETE NO ACTION
-	--Precio de Referencia y unidad de referencia
-	--ayudaria a mostrar el precio total por unidad de 
-	--referencia, siempre esta en los supermercados
-	--ademas le dieron importancia en el foro
 );
 
 -- Creación de la tabla MedioPago

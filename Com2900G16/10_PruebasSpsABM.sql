@@ -1,4 +1,5 @@
 USE Com2900G16;
+EXEC informe.LimpiarTodasLasTablas;
 
 -- CASOS DE PRUEBA PARA PROCEDIMIENTOS DE SUCURSAL
 -- 1. Probando el procedimiento AltaSucursal: Inserción correcta.

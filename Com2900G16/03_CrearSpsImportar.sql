@@ -124,11 +124,13 @@ BEGIN
 
 		INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal)
 		(SELECT tmp.Legajo, tmp.Nombre, tmp.Apellido,
-		DNI, tmp.mail_empresa, CONCAT('23','-',tmp.DNI,'-','4'),
+		DNI, REPLACE(REPLACE(REPLACE(REPLACE(tmp.mail_empresa, CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ' ', ''), CONCAT('23','-',tmp.DNI,'-','4'),
 		tmp.Cargo, CASE TRIM(tmp.Turno) WHEN 'TM' THEN 'TM' WHEN 'TT' THEN 'TT' WHEN 'Jornada completa' THEN 'TC' END , 
 		(SELECT ID FROM tienda.Sucursal WHERE Ciudad = Ciudad_Sucursal COLLATE Modern_Spanish_CI_AS)
 		FROM #tmpEmpleado tmp
-		WHERE tmp.Legajo IS NOT NULL AND NOT EXISTS (SELECT 1 FROM tienda.Empleado e WHERE tmp.Legajo = e.legajo COLLATE Modern_Spanish_CI_AS OR tmp.DNI = e.DNI COLLATE Modern_Spanish_CI_AS))
+		WHERE tmp.Legajo IS NOT NULL AND NOT EXISTS 
+		(SELECT 1 FROM tienda.Empleado e 
+		WHERE tmp.Legajo = e.legajo COLLATE Modern_Spanish_CI_AS OR tmp.DNI = e.DNI COLLATE Modern_Spanish_CI_AS))
 		
     END TRY
     BEGIN CATCH
@@ -290,7 +292,6 @@ BEGIN
                 CODEPAGE = ''65001''              -- UTF-8
             );
         ';
-		PRINT @sql
 
         -- Ejecutar la instrucción BULK INSERT usando SQL dinámico
         EXEC sp_executesql @sql;
@@ -446,20 +447,22 @@ Exec sp_OAMethod @Object, 'responseText', @ResponseText OUTPUT
 IF((Select @ResponseText) <> '')
 BEGIN
      DECLARE @json NVARCHAR(MAX) = (Select @ResponseText)
-     SET @valor = 
-		 (SELECT venta
-		 FROM OPENJSON(@json)
-			  WITH (
-					 moneda VARCHAR(10) '$.moneda',
-					 casa VARCHAR(10) '$.casa',
-					 nombre VARCHAR(10) '$.nombre',
-					 compra VARCHAR(10) '$.compra',
-					 venta VARCHAR(10) '$.venta',
-					 fechaActualizacion NVARCHAR(20) '$.fechaActualizacion'
-				   ));
+		SET @valor = 
+			CAST(ROUND(CAST(
+				(SELECT venta
+				 FROM OPENJSON(@json)
+				 WITH (
+					moneda VARCHAR(10) '$.moneda',
+					casa VARCHAR(10) '$.casa',
+					nombre VARCHAR(10) '$.nombre',
+					compra VARCHAR(10) '$.compra',
+					venta VARCHAR(10) '$.venta',
+					fechaActualizacion NVARCHAR(20) '$.fechaActualizacion'
+				 )
+				) AS FLOAT), 0) AS INT);
 END
 ELSE
-	 SET @valor = 0;
+	 SET @valor = 1000;
 Exec sp_OADestroy @Object
 RETURN @valor
 END
@@ -640,13 +643,8 @@ BEGIN
                 CODEPAGE = ''65001''              -- UTF-8
             );
         ';
-		PRINT @sql
-
         -- Ejecutar la instrucción BULK INSERT usando SQL dinámico
         EXEC sp_executesql @sql;
-
-        -- Seleccionar los datos de la tabla temporal para verificación
-        --SELECT DISTINCT Producto FROM #tmp_ventas
 
 		--tratamiento fecha
 		UPDATE #tmp_ventas
@@ -654,28 +652,22 @@ BEGIN
 
 		UPDATE #tmp_ventas
 		SET Producto = catalogo.fnNormalizar(Producto)
-		/*
-		SELECT *
-			FROM #tmp_ventas
-			WHERE Producto LIKE '%Â%' OR Producto LIKE '%Ã%' OR Producto LIKE '%å%'
 
-		*/
 		IF (SELECT COUNT(1) FROM tienda.Cliente) = 0
 			INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado) VALUES ('Juan Perez', 'Member', 'M', 1);	
 
 
-		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago, ID_Sucursal, ID_Cliente)
+		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago, ID_Sucursal, ID_Cliente,PuntoDeVenta,Comprobante)
 		(
-		SELECT tmp.ID_FACTURA,
-			   CASE
-					WHEN ISDATE(tmp.Fecha) = 1 THEN CONVERT(DATETIME, tmp.Fecha, 103)
-					ELSE CONVERT(DATETIME, tmp.Fecha, 101)
-			   END,
+		SELECT tmp.ID_FACTURA,   
+					CONVERT(DATE, tmp.Fecha, 101),
 			   'Pagada',
 			   (SELECT e.ID FROM tienda.Empleado e WHERE e.Legajo = tmp.Legajo_Empleado COLLATE Modern_Spanish_CI_AS),
 			   (SELECT m.ID FROM ventas.MedioPago m WHERE tmp.Medio_De_Pago = m.Descripcion_ENG  COLLATE Modern_Spanish_CI_AS OR tmp.Medio_De_Pago = m.Descripcion_ESP COLLATE Modern_Spanish_CI_AS),
 			   (SELECT s.ID FROM tienda.Sucursal s WHERE s.Ciudad_anterior = tmp.Ciudad),
-			   (SELECT TOP(1) 1 FROM tienda.Cliente c)
+			   (SELECT TOP(1) 1 FROM tienda.Cliente c),
+			   '00001',
+			   0
 			FROM #tmp_ventas tmp
 			WHERE NOT EXISTS 
 			(
@@ -688,18 +680,6 @@ BEGIN
 					(f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS)
 			)
 		)
-		/*
-		SELECT tmp.ID_FACTURA 
-			FROM #tmp_ventas tmp
-			LEFT JOIN ventas.Factura f ON f.id_factura_importado LIKE tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS
-			WHERE f.ID IS NULL;
-
-		SELECT tmp.Producto, tmp.Precio_Unitario
-			FROM #tmp_ventas tmp
-			LEFT JOIN catalogo.Producto p ON p.Nombre = tmp.Producto COLLATE Modern_Spanish_CI_AS 
-										  AND p.PrecioUnitario = tmp.Precio_Unitario
-			WHERE p.ID IS NULL;
-		*/
 		
 		INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IdentificadorPago)
 		(
@@ -707,8 +687,6 @@ BEGIN
 				   (SELECT p.ID FROM catalogo.Producto p WHERE p.Nombre = tmp.Producto COLLATE Modern_Spanish_CI_AS AND p.PrecioUnitario = tmp.Precio_Unitario),
 				   tmp.Cantidad,
 				   tmp.Precio_Unitario,
-				   --tmp.Tipo_De_Cliente,
-				   --tmp.Genero,
 				   tmp.Identificador_Pago
 				FROM #tmp_ventas tmp
 				WHERE NOT EXISTS
