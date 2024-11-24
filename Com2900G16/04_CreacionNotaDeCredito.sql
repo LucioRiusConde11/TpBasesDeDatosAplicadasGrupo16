@@ -41,7 +41,7 @@ BEGIN
         FROM ventas.Factura AS f
         JOIN ventas.DetalleFactura AS df ON f.ID = df.ID_Factura
         WHERE f.ID = @ID_Factura 
-		  AND f.ID_Cliente = @idCliente
+		  AND f.ID = @idCliente
           AND df.ID_Producto = @ID_Producto
 		  AND f.Estado = 'Pagada' 
     )
@@ -49,11 +49,9 @@ BEGIN
         BEGIN TRANSACTION;
         
         BEGIN TRY
-            -- Insertar en la tabla NotaCredito
             INSERT INTO ventas.NotaCredito (ID_Factura, ID_Cliente, ID_Producto, Motivo,PuntoDeVenta,Comprobante)
             VALUES (@ID_Factura,@IdCliente, @ID_Producto, @Motivo,@PuntoDeVenta,@Comprobante);
 
-            -- Actualizar el precio unitario en la tabla DetalleFactura para reflejar el reembolso
             UPDATE ventas.DetalleFactura
             SET PrecioUnitario = 0
             WHERE ID_Factura = @ID_Factura
@@ -63,11 +61,11 @@ BEGIN
         END TRY
         BEGIN CATCH
             ROLLBACK TRANSACTION;
-            PRINT('Error al crear la nota de crédito o al actualizar el detalle de la factura.');
+            RAISERROR('Error al crear la nota de crédito o al actualizar el detalle de la factura.', 16, 1);
         END CATCH;
     END
     ELSE
-        PRINT('Error: No existe una factura con el producto especificado para el cliente.');
+        RAISERROR('Error: No existe una factura con el producto especificado para el cliente.', 16, 1);
 END;
 GO
 

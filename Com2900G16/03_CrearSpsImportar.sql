@@ -74,7 +74,7 @@ BEGIN
 
     END TRY
     BEGIN CATCH
-        PRINT 'Error al importar el archivo Excel: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar el archivo Excel ' , 16, 1);
     end catch
 
 		DROP TABLE IF EXISTS #tmpSucursal;
@@ -134,7 +134,7 @@ BEGIN
 		
     END TRY
     BEGIN CATCH
-        PRINT 'Error al importar el archivo Excel: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar el archivo Excel' , 16, 1);
     end catch
 
 		DROP TABLE IF EXISTS #tmpEmpleado;
@@ -187,7 +187,7 @@ BEGIN
 
 	END TRY
 	BEGIN CATCH
-		PRINT 'Error al importar los datos: ' + ERROR_MESSAGE();
+		RAISERROR( 'Error al importar los datos ', 16, 1);
 	END CATCH;
 	
 	IF OBJECT_ID('tempdb..#tmp_CategoriaProducto') IS NOT NULL
@@ -341,11 +341,9 @@ BEGIN
 
     END TRY
     BEGIN CATCH
-        -- Capturar errores
-        PRINT 'Error al importar los datos: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar los datos ' , 16, 1);
     END CATCH;
 
-    -- Eliminar la tabla temporal al final del procedimiento
     DROP TABLE IF EXISTS #staging_catalogo_producto;
 END;
 GO
@@ -423,7 +421,7 @@ BEGIN
 
     END TRY
     BEGIN CATCH
-        PRINT 'Error al importar el archivo Excel: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar el archivo Excel ', 16, 1);
     END CATCH;
 END;
 GO
@@ -480,10 +478,7 @@ BEGIN
 	DECLARE @valorDolar as INT;
 	SET @valorDolar = catalogo.ConversionDolarPeso()
 	IF (@valorDolar = 0)
-	BEGIN
-		PRINT 'Error al obtener el valor del dolar en pesos'
-		RETURN
-	END
+		RAISERROR( 'Error al obtener el valor del dolar en pesos', 16, 1)
 
     BEGIN TRY
         -- Configurar opciones avanzadas
@@ -542,7 +537,7 @@ BEGIN
 
     END TRY
     BEGIN CATCH
-        PRINT 'Error al importar el archivo Excel: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar el archivo Excel ', 16, 1);
     END CATCH;
 END;
 GO
@@ -598,7 +593,7 @@ BEGIN
 		
     END TRY
     BEGIN CATCH
-        PRINT 'Error al importar el archivo Excel: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar el archivo Excel ', 16, 1);
     end catch
 
 		DROP TABLE IF EXISTS #tmpMedioDePago;
@@ -715,7 +710,7 @@ BEGIN
     END TRY
     BEGIN CATCH
         -- Capturar errores
-        PRINT 'Error al importar los datos: ' + ERROR_MESSAGE();
+        RAISERROR( 'Error al importar los datos ' , 16, 1);
     END CATCH;
 
     -- Eliminar la tabla temporal al final del procedimiento
