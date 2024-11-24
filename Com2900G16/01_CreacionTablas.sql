@@ -56,9 +56,9 @@ CREATE TABLE tienda.Empleado (
     Estado BIT DEFAULT 1,
     FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
     CHECK (Legajo LIKE '[0-9][0-9][0-9][0-9][0-9][0-9]'), 
-    CHECK (DNI LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), 
+    CONSTRAINT CHK_DNI CHECK (DNI LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), 
     CHECK (MailEmpresa LIKE '%_@__%.__%'), 
-    CHECK (CUIL LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'), 
+    CONSTRAINT CHK_CUIL CHECK (CUIL LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'), 
     CHECK (Estado IN (0, 1)) 
 );
 
@@ -153,7 +153,7 @@ CREATE TABLE ventas.DetalleFactura (
     Cantidad INT NOT NULL,
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
 	IVA DECIMAL(18,2) NOT NULL,
-	Subtotal DECIMAL(18,2) NOT NULL,
+    Subtotal AS (Cantidad * PrecioUnitario) PERSISTED,
     FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE CASCADE,
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
 );

@@ -1,10 +1,6 @@
 USE Com2900G16;
 GO
 
--- Ejecutar el procedimiento de encriptación
-GO
-EXEC tienda.EncriptarEmpleado;
-
 -- Visualizar datos antes de insertar
 SELECT * FROM tienda.Empleado;
 GO
@@ -23,6 +19,10 @@ EXEC tienda.AltaEmpleado
     @Estado = 1;
 GO
 
+-- Ejecutar el procedimiento de encriptación
+GO
+EXEC tienda.EncriptarEmpleado;
+
 -- Verificar que el nuevo empleado se haya insertado correctamente encriptado
 SELECT * FROM tienda.Empleado;
 GO
@@ -31,7 +31,7 @@ GO
 OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
 DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 SELECT CONVERT(varchar, DECRYPTBYKEY(E.Apellido)) AS Apellido, CONVERT(varchar, DECRYPTBYKEY(E.Nombre)) AS Nombre,
-CONVERT(varchar, DECRYPTBYKEY(E.Mail_Empresa)) AS Mail_Empresa, CONVERT(varchar, DECRYPTBYKEY(E.DNI)) AS DNI,
+CONVERT(varchar, CONVERT(varchar, DECRYPTBYKEY(E.DNI))) AS DNI,
 CONVERT(varchar, DECRYPTBYKEY(E.CUIL)) AS CUIL
 FROM tienda.Empleado E;
 CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
@@ -74,7 +74,7 @@ GO
 OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
 DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 SELECT CONVERT(varchar, DECRYPTBYKEY(E.Apellido)) AS Apellido, CONVERT(varchar, DECRYPTBYKEY(E.Nombre)) AS Nombre,
-CONVERT(varchar, DECRYPTBYKEY(E.Mail_Empresa)) AS Mail_Empresa, CONVERT(varchar, DECRYPTBYKEY(E.DNI)) AS DNI,
+CONVERT(varchar, DECRYPTBYKEY(E.MailEmpresa)) AS Mail_Empresa, CONVERT(varchar, DECRYPTBYKEY(E.DNI)) AS DNI,
 CONVERT(varchar, DECRYPTBYKEY(E.CUIL)) AS CUIL
 FROM tienda.Empleado E;
 CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
