@@ -126,7 +126,9 @@ CREATE TABLE ventas.Factura (
 	SubTotal DECIMAL(10, 2) NOT NULL,
 	IvaTotal DECIMAL(10, 2) NOT NULL,
 	Total DECIMAL(10, 2) NOT NULL,
-	CHECK (Estado IN ('Pagada', 'No pagada','Cancelada'))
+	ID_Venta INT NOT NULL,
+	CHECK (Estado IN ('Pagada', 'No pagada','Cancelada')),
+	FOREIGN KEY (ID_Venta) REFERENCES ventas.Venta(ID)
 );
 
 IF OBJECT_ID(N'ventas.Pago') IS NOT NULL

@@ -353,13 +353,16 @@ BEGIN
 	DECLARE @UltimoComprobante INT;
 	DECLARE @Comprobante VARCHAR(20);
 
+	IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+        RAISERROR ('Venta no encontrada.', 16, 1);
+
 	SELECT @UltimoComprobante = MAX(ID)
 		FROM ventas.Factura;
 
 	SET @Comprobante = @PuntoDeVenta + '-' + RIGHT('00000' + CAST(@UltimoComprobante AS VARCHAR(5)), 5);
 
-    INSERT INTO ventas.Factura (Estado, FechaHora, Comprobante, PuntoDeVenta, SubTotal, IvaTotal, Total)
-    VALUES ('No pagada', GETDATE(), @Comprobante, @PuntoDeVenta, 0, 0, 0);
+    INSERT INTO ventas.Factura (Estado, FechaHora, Comprobante, PuntoDeVenta, SubTotal, IvaTotal, Total,ID_Venta)
+    VALUES ('No pagada', GETDATE(), @Comprobante, @PuntoDeVenta, 0, 0, 0,@ID_Venta);
 END;
 GO
 
@@ -394,26 +397,35 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE ventas.AltaDetalleFactura
-    @ID_Factura INT,
-    @ID_Producto INT,
-    @Cantidad INT,
-    @PrecioUnitario DECIMAL(10, 2),
-    @IVA DECIMAL(18, 2),
-    @Subtotal DECIMAL(18, 2)
+CREATE PROCEDURE ventas.AltaDetalleFactura
+    @ID_Venta INT,
+    @ID_Factura INT
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura)
         RAISERROR ('Factura no encontrada.', 16, 1);
-
-    IF NOT EXISTS (SELECT 1 FROM catalogo.Producto WHERE ID = @ID_Producto)
-        RAISERROR ('Producto no encontrado.', 16, 1);
+	IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+        RAISERROR ('Venta no encontrada.', 16, 1);
+	IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID_Venta = @ID_Venta AND ID= @ID_Factura)
+        RAISERROR ('Factura no coincide con venta.', 16, 1);
 
     INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IVA, Subtotal)
-    VALUES (@ID_Factura, @ID_Producto, @Cantidad, @PrecioUnitario, @IVA, @Subtotal);
+    SELECT 
+        @ID_Factura AS ID_Factura,
+        DV.ID_Producto,
+        DV.Cantidad,
+        P.PrecioUnitario,
+        P.PrecioUnitario * P.IVA AS IVA,
+        (DV.Cantidad * P.PrecioUnitario) + (DV.Cantidad * P.PrecioUnitario * 0.21) AS Subtotal
+    FROM 
+        ventas.DetalleVenta DV
+    INNER JOIN 
+        catalogo.Producto P ON DV.ID_Producto = P.ID
+    WHERE 
+        DV.ID_Venta = @ID_Venta;
 END;
-GO
 
+GO
 CREATE OR ALTER PROCEDURE ventas.BajaDetalleFactura
     @ID INT
 AS
@@ -429,30 +441,14 @@ GO
 
 CREATE OR ALTER PROCEDURE ventas.ModificarDetalleFactura
     @ID INT,
-    @ID_Factura INT,
-    @ID_Producto INT,
-    @Cantidad INT,
-    @PrecioUnitario DECIMAL(10, 2),
-    @IVA DECIMAL(18, 2),
-    @Subtotal DECIMAL(18, 2)
+    @ID_Factura INT
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura)
         RAISERROR ('Factura no encontrada.', 16, 1);
 
-    IF NOT EXISTS (SELECT 1 FROM catalogo.Producto WHERE ID = @ID_Producto)
-        RAISERROR ('Producto no encontrado.', 16, 1);
-
-    IF NOT EXISTS (SELECT 1 FROM ventas.DetalleFactura WHERE ID = @ID)
-        RAISERROR ('Detalle de factura no encontrado.', 16, 1);
-
     UPDATE ventas.DetalleFactura
-    SET ID_Factura = @ID_Factura,
-        ID_Producto = @ID_Producto,
-        Cantidad = @Cantidad,
-        PrecioUnitario = @PrecioUnitario,
-        IVA = @IVA,
-        Subtotal = @Subtotal
+    SET ID_Factura = @ID_Factura
     WHERE ID = @ID;
 END;
 GO
