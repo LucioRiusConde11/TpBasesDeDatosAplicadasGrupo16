@@ -1,21 +1,43 @@
 USE Com2900G16;
 -- 1. Creación de datos de prueba para las tablas necesarias
-INSERT INTO tienda.Sucursal (Direccion, Ciudad, Ciudad_anterior)
-VALUES ('Calle Falsa 123', 'Ciudad Prueba', NULL);
-INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado)
-VALUES ('Juan Perez', 'Normal', 'M', 1);
-INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
-VALUES ('000001', 'Carlos', 'Gomez', '12345678', 'carlos.gomez@empresa.com', '20-12345678-9', 'Supervisor', 'TM', 1, 1);
-INSERT INTO catalogo.CategoriaProducto (LineaProducto, Categoria)
-VALUES ('Línea Hogar', 'Electrodomésticos');
-INSERT INTO catalogo.Producto (Nombre, ID_Categoria, PrecioUnitario, PrecioReferencia, UnidadReferencia, Fecha)
-VALUES ('Licuadora', 1, 5000.00, 5000.00, 'Unidad', GETDATE());
-INSERT INTO ventas.MedioPago (Descripcion_ESP, Descripcion_ENG)
-VALUES ('Efectivo', 'Cash');
-INSERT INTO ventas.Factura (FechaHora, Estado, ID_Cliente, ID_Empleado, ID_Sucursal, ID_MedioPago, PuntoDeVenta, Comprobante, id_factura_importado)
-VALUES (GETDATE(), 'Pagada', 1, 1, 1, 1, 'P0001', 1, 'F-001');
-INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IdentificadorPago)
-VALUES (1, 1, 1, 5000.00, 'P-001');
+EXEC informe.LimpiarTodasLasTablas;
+EXEC tienda.AltaSucursal @Direccion = 'Calle Principal 456', @Ciudad = 'Ciudad Ejemplo', @Ciudad_anterior = NULL;
+EXEC tienda.AltaEmpleado @Legajo = '000002', @Nombre = 'Ana', @Apellido = 'Lopez', @DNI = '87654321',
+    @Mail_Empresa = 'ana.lopez@empresa.com', @CUIL = '27-87654321-9', @Cargo = 'Vendedor', @Turno = 'TT', @ID_Sucursal = 0, @Estado = 1;
+EXEC tienda.AltaCliente @Nombre = 'Laura Garcia', @TipoCliente = 'Member', @Genero = 'F', @Estado = 1, @CUIT = '20-41141444-1';
+EXEC catalogo.AltaCategoriaProducto @LineaProducto = 'Línea Jardín', @Categoria = 'Muebles de Jardín';
+
+Declare @date date
+set @date = getdate()
+EXEC catalogo.AltaProducto 
+    @Nombre = 'Lavadora', 
+    @ID_Categoria = 0, 
+    @PrecioUnitario = 2000.00, 
+    @PrecioReferencia = 2000.00, 
+    @UnidadReferencia = 'Unidad', 
+    @Fecha = @date,
+	@IVA = 0.21;
+
+Declare @date date
+set @date = getdate()
+EXEC catalogo.AltaProducto 
+    @Nombre = 'Silla', 
+    @ID_Categoria = 0, 
+    @PrecioUnitario = 2000.00, 
+    @PrecioReferencia = 2000.00, 
+    @UnidadReferencia = 'Unidad', 
+    @Fecha = @date,
+	@IVA = 0.21;
+
+EXEC ventas.AltaMedioPago 
+    @Descripcion_ESP = 'Tarjeta de Crédito', 
+    @Descripcion_ENG = 'Credit Card';
+EXEC ventas.AltaVenta @ID_Cliente = 0, @ID_Sucursal = 0
+EXEC ventas.AltaDetalleVenta @ID_Venta=1, @ID_Producto= 1, @Cantidad=2
+EXEC ventas.AltaDetalleVenta @ID_Venta=1, @ID_Producto= 2, @Cantidad=5
+EXEC ventas.AltaFactura @ID_Venta = 1 , @PuntoDeVenta = 0001,@Comprobante = '00000001'
+EXEC ventas.AltaDetalleFactura @ID_Venta = 1, @ID_Factura = 0
+EXEC ventas.AltaPago @ID_Factura = 0, @ID_MedioPago = 0, @Monto = 14840.00
 
 -- 2. Creación de los usuarios y asignación de roles
 EXEC ventas.CrearRolSupervisor
@@ -33,12 +55,15 @@ EXECUTE AS USER = 'SupervisorUser';
 
 PRINT 'Intentando crear nota de crédito como Supervisor:';
 EXEC ventas.CrearNotaCredito 
-    @ID_Factura = 1, 
+    @ID_Factura = 0, 
     @ID_Producto = 1, 
-    @IdCliente = 1, 
-    @Motivo = 'Devolución de producto defectuoso',
-	@PuntoDeVenta = 1,
-	@Comprobante = 10000;
+    @Motivo = 'Devolución de producto defectuoso'
+
+EXEC ventas.CrearNotaCredito 
+    @ID_Factura = 0, 
+    @Motivo = 'Devolución de producto defectuoso'
+
+SELECT * FROM ventas.Factura 
 REVERT;
 
 -- Intento de ejecución del procedimiento como usuario sin permisos (EmpleadoUser)
@@ -48,10 +73,7 @@ PRINT 'Intentando crear nota de crédito como Empleado sin permisos:';
 EXEC ventas.CrearNotaCredito 
     @ID_Factura = 1, 
     @ID_Producto = 1, 
-    @IdCliente = 1, 
-    @Motivo = 'Devolución de producto defectuoso',
-	@PuntoDeVenta = 1,
-	@Comprobante = 10000;
+    @Motivo = 'Devolución de producto defectuoso'
 REVERT;
 
 EXECUTE AS USER = 'SupervisorUser';

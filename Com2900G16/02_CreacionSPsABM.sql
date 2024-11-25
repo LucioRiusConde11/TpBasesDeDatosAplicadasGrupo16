@@ -786,55 +786,64 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Deshabilitar restricciones de clave foránea
     ALTER TABLE ventas.DetalleFactura NOCHECK CONSTRAINT ALL;
     ALTER TABLE ventas.Factura NOCHECK CONSTRAINT ALL;
     ALTER TABLE ventas.MedioPago NOCHECK CONSTRAINT ALL;
-	ALTER TABLE ventas.Venta NOCHECK CONSTRAINT ALL;
-	ALTER TABLE ventas.DetalleVenta NOCHECK CONSTRAINT ALL;
-	ALTER TABLE ventas.Pago NOCHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.Venta NOCHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.DetalleVenta NOCHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.Pago NOCHECK CONSTRAINT ALL;
     ALTER TABLE tienda.Empleado NOCHECK CONSTRAINT ALL;
     ALTER TABLE tienda.Cliente NOCHECK CONSTRAINT ALL;
     ALTER TABLE tienda.Sucursal NOCHECK CONSTRAINT ALL;
     ALTER TABLE catalogo.Producto NOCHECK CONSTRAINT ALL;
     ALTER TABLE catalogo.CategoriaProducto NOCHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.NotaCredito NOCHECK CONSTRAINT ALL;
 
+    -- Borrar datos de todas las tablas
     DELETE FROM ventas.DetalleFactura;
     DELETE FROM ventas.Factura;
     DELETE FROM ventas.MedioPago;
-	DELETE FROM ventas.Venta;
-	DELETE FROM ventas.DetalleVenta;
-	DELETE FROM ventas.Pago;
+    DELETE FROM ventas.Venta;
+    DELETE FROM ventas.DetalleVenta;
+    DELETE FROM ventas.Pago;
     DELETE FROM tienda.Empleado;
     DELETE FROM tienda.Cliente;
     DELETE FROM tienda.Sucursal;
     DELETE FROM catalogo.Producto;
     DELETE FROM catalogo.CategoriaProducto;
+    DELETE FROM ventas.NotaCredito;
 
+    -- Reiniciar los contadores IDENTITY a 1
     DBCC CHECKIDENT ('ventas.DetalleFactura', RESEED, 0);
     DBCC CHECKIDENT ('ventas.Factura', RESEED, 0);
     DBCC CHECKIDENT ('ventas.MedioPago', RESEED, 0);
-	DBCC CHECKIDENT ('ventas.Venta', RESEED, 0);
+    DBCC CHECKIDENT ('ventas.Venta', RESEED, 0);
     DBCC CHECKIDENT ('ventas.DetalleVenta', RESEED, 0);
-	DBCC CHECKIDENT ('ventas.Pago', RESEED, 0);
+    DBCC CHECKIDENT ('ventas.Pago', RESEED, 0);
     DBCC CHECKIDENT ('tienda.Empleado', RESEED, 0);
     DBCC CHECKIDENT ('tienda.Cliente', RESEED, 0);
     DBCC CHECKIDENT ('tienda.Sucursal', RESEED, 0);
     DBCC CHECKIDENT ('catalogo.Producto', RESEED, 0);
     DBCC CHECKIDENT ('catalogo.CategoriaProducto', RESEED, 0);
+    DBCC CHECKIDENT ('ventas.NotaCredito', RESEED, 0);
 
+    -- Habilitar restricciones de clave foránea
     ALTER TABLE ventas.DetalleFactura WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE ventas.Factura WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE ventas.MedioPago WITH CHECK CHECK CONSTRAINT ALL;
-	ALTER TABLE ventas.Venta WITH CHECK CHECK CONSTRAINT ALL;
-	ALTER TABLE ventas.DetalleVenta WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.Venta WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.DetalleVenta WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE ventas.Pago WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE tienda.Empleado WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE tienda.Cliente WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE tienda.Sucursal WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE catalogo.Producto WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE catalogo.CategoriaProducto WITH CHECK CHECK CONSTRAINT ALL;
+    ALTER TABLE ventas.NotaCredito WITH CHECK CHECK CONSTRAINT ALL;
 
-    PRINT ('Todas las tablas han sido vaciadas y los contadores IDENTITY han sido reiniciados.');
+    PRINT ('Todas las tablas han sido vaciadas y los contadores IDENTITY han sido reiniciados a 1.');
 END;
 GO
+
 

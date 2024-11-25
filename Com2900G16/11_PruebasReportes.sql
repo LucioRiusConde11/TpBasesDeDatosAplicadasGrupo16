@@ -4,61 +4,88 @@ GO
 -- Limpieza previa para evitar conflictos
 EXEC informe.LimpiarTodasLasTablas;
 
--- Inserción de datos en catalogo.CategoriaProducto
+-- Insertar datos en la tabla Sucursal
+INSERT INTO tienda.Sucursal (Direccion, Ciudad) 
+VALUES 
+('Sucursal Centro', 'Ciudad A'),
+('Sucursal Norte', 'Ciudad B'),
+('Sucursal Sur', 'Ciudad C');
+SELECT * FROM  tienda.Sucursal
+
+-- Insertar datos en la tabla Empleado
+INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, MailEmpresa, CUIL, Cargo, Turno, ID_Sucursal) 
+VALUES 
+('000001', 'Juan', 'Perez', '12345678', 'juan.perez@empresa.com', '20-12345678-9', 'Cajero', 'M', 1),
+('000002', 'Ana', 'Garcia', '87654321', 'ana.garcia@empresa.com', '27-87654321-0', 'Supervisor', 'T', 2),
+('000003', 'Luis', 'Lopez', '11223344', 'luis.lopez@empresa.com', '23-11223344-5', 'Gerente', 'N', 3);
+SELECT * FROM  tienda.Empleado
+
+-- Insertar datos en la tabla Cliente
+INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, CUIT)
+VALUES 
+('Maria Lopez', 'Normal', 'F', '20-98765432-1'),
+('Carlos Diaz', 'Member', 'M', '20-87654321-2');
+SELECT * FROM  tienda.Cliente
+
+-- Insertar datos en la tabla CategoriaProducto
 INSERT INTO catalogo.CategoriaProducto (LineaProducto, Categoria)
 VALUES 
-    ('Alimentos', 'Galletas'),
-    ('Alimentos', 'Cereales'),
-    ('Bebidas', 'Jugos'),
-    ('Bebidas', 'Gaseosas');
+('Línea Blanca', 'Electrodomésticos'),
+('Hogar', 'Muebles');
+SELECT * FROM  catalogo.CategoriaProducto
 
--- Inserción de datos en tienda.Sucursal
-INSERT INTO tienda.Sucursal (Direccion, Ciudad, Ciudad_anterior)
+-- Insertar datos en la tabla Producto
+INSERT INTO catalogo.Producto (Nombre, ID_Categoria, PrecioUnitario, Fecha, IVA)
 VALUES 
-    ('Avenida Siempre Viva 123', 'Springfield', NULL),
-    ('Calle Falsa 456', 'Shelbyville', NULL);
+('Heladera', 0, 45000.00, '2024-01-01', 0.21),
+('Microondas', 0, 15000.00, '2024-01-02', 0.21),
+('Silla', 1, 1200.00, '2024-01-03', 0.21);
 
--- Inserción de datos en tienda.Cliente
-INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado)
-VALUES 
-    ('Homer Simpson', 'Normal', 'M', 1),
-    ('Marge Simpson', 'Member', 'F', 1),
-    ('Bart Simpson', 'Normal', 'M', 1);
-
--- Inserción de datos en tienda.Empleado
-INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
-VALUES 
-    ('000001', 'Lenny', 'Leonard', '12345678', 'lenny@tienda.com', '20-12345678-9', 'Cajero', 'M', 1, 1),
-    ('000002', 'Carl', 'Carlson', '87654321', 'carl@tienda.com', '20-87654321-7', 'Cajero', 'T', 2, 1);
-
--- Inserción de datos en catalogo.Producto
-INSERT INTO catalogo.Producto (Nombre, ID_Categoria, PrecioUnitario, PrecioReferencia, UnidadReferencia, Fecha)
-VALUES 
-    ('Galletas de Chocolate', 1, 50.00, 45.00, '100g', '2024-01-01'),
-    ('Cereal de Avena', 2, 80.00, 75.00, '200g', '2024-01-02'),
-    ('Jugo de Naranja', 3, 30.00, 28.00, '500ml', '2024-01-03'),
-    ('Gaseosa Cola', 4, 60.00, 58.00, '1L', '2024-01-04');
-
--- Inserción de datos en ventas.MedioPago
+-- Insertar datos en la tabla MedioPago
 INSERT INTO ventas.MedioPago (Descripcion_ESP, Descripcion_ENG)
 VALUES 
-    ('Efectivo', 'Cash'),
-    ('Tarjeta de Crédito', 'Credit Card'),
-    ('Tarjeta de Débito', 'Debit Card');
+('Efectivo', 'Cash'),
+('Tarjeta de Crédito', 'Credit Card'),
+('Tarjeta de Débito', 'Debit Card');
 
--- Inserción de datos en ventas.Factura
-INSERT INTO ventas.Factura (FechaHora, Estado, ID_Cliente, ID_Empleado, ID_Sucursal, ID_MedioPago, PuntoDeVenta, Comprobante, id_factura_importado)
+-- Insertar datos en la tabla Venta
+INSERT INTO ventas.Venta (Fecha, ID_Cliente, Total, Estado, ID_Sucursal)
 VALUES 
-    ('2024-01-10 10:00:00', 'Pagada', 1, 1, 1, 1, '00001', 12345, NULL),
-    ('2024-01-11 15:30:00', 'Pagada', 2, 2, 2, 2, '00002', 67890, NULL);
+('2024-11-01', 0, 47000.00, 'Pagada', 1),
+('2024-11-02', 1, 30000.00, 'Pagada', 2),
+('2024-11-03', 0, 1200.00, 'No pagada', 3);
 
--- Inserción de datos en ventas.DetalleFactura
-INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IdentificadorPago)
+-- Insertar datos en la tabla DetalleVenta
+INSERT INTO ventas.DetalleVenta (ID_Venta, ID_Producto, Cantidad, Precio_Unitario, Subtotal)
 VALUES 
-    (1, 1, 2, 50.00, 'IDPago001'), 
-    (1, 2, 1, 80.00, 'IDPago002'),
-    (2, 3, 3, 30.00, 'IDPago003'), 
-    (2, 4, 1, 60.00, 'IDPago004');
+(1, 1, 1, 45000.00, 45000.00),
+(1, 2, 1, 15000.00, 15000.00),
+(2, 3, 25, 1200.00, 30000.00);
+
+-- Insertar datos en la tabla Factura
+INSERT INTO ventas.Factura (Estado, FechaHora, Comprobante, PuntoDeVenta, SubTotal, IvaTotal, Total, ID_Venta)
+VALUES 
+('Pagada', '2024-11-01 10:00:00', 'A001', '00001', 47000.00, 9870.00, 56870.00, 1),
+('Pagada', '2024-11-02 15:00:00', 'A002', '00002', 30000.00, 6300.00, 36300.00, 2),
+('No pagada', '2024-11-03 18:00:00', 'A003', '00003', 1200.00, 252.00, 1452.00, 3);
+
+-- Insertar datos en la tabla DetalleFactura
+INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IVA, Subtotal)
+VALUES 
+(1, 1, 1, 45000.00, 9450.00, 54450.00),
+(1, 2, 1, 15000.00, 3150.00, 18150.00),
+(2, 3, 25, 1200.00, 2520.00, 31500.00);
+
+-- Insertar datos en la tabla Pago
+INSERT INTO ventas.Pago (ID_Factura, ID_MedioPago, Monto)
+VALUES 
+(1, 1, 56870.00),
+(2, 2, 36300.00);
+
+-- Insertar datos en la tabla NotaCredito
+INSERT INTO ventas.NotaCredito (ID_Factura, ID_Cliente, ID_Producto, FechaEmision, Motivo, Comprobante)
+VALUES 
+(1, 1, 2, '2024-11-01', 'Producto defectuoso', 'NC001');
 
 
 

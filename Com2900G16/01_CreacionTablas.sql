@@ -170,7 +170,7 @@ CREATE TABLE ventas.DetalleFactura (
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
 	IVA DECIMAL(18,2) NOT NULL,
     Subtotal  DECIMAL(10,2) ,
-	Estado BIT DEFAULT 0, --Si es 1 se volvio el detalle con nota de credito 
+	Estado BIT NOT NULL DEFAULT 0, --Si es 1 se volvio el detalle con nota de credito 
     FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE CASCADE,
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
 );
