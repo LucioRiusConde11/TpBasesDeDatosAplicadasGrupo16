@@ -423,8 +423,10 @@ BEGIN
 	SELECT @UltimoComprobante = MAX(ID)
 		FROM ventas.Factura;
 
+	DECLARE @subTotal DECIMAL(10,2) = (SELECT v.Total FROM ventas.Venta v WHERE ID = @ID_Venta)
+
     INSERT INTO ventas.Factura (Estado, FechaHora, Comprobante, PuntoDeVenta, SubTotal, IvaTotal, Total,ID_Venta)
-    VALUES ('No pagada', GETDATE(), @Comprobante, @PuntoDeVenta, 0, 0, 0,@ID_Venta);
+    VALUES ('No pagada', GETDATE(), @Comprobante, @PuntoDeVenta, @subTotal, @subTotal * 0.21, @subTotal + @subTotal * 0.21,@ID_Venta);
 END;
 GO
 
@@ -443,6 +445,8 @@ BEGIN
 		RETURN
 	END
     DELETE FROM ventas.Factura WHERE ID = @ID;
+	UPDATE ventas.Factura
+		SET Estado = 'Cancelada'
 END;
 
 GO
@@ -494,7 +498,7 @@ BEGIN
         DV.ID_Producto,
         DV.Cantidad,
         P.PrecioUnitario,
-        (P.PrecioUnitario * P.IVA) AS IVA,
+        (DV.Subtotal * P.IVA) AS IVA,
         (DV.Subtotal + (DV.Subtotal * P.IVA)) AS Subtotal
     FROM 
         ventas.DetalleVenta DV
@@ -525,18 +529,7 @@ END;
 
 
 GO
-CREATE OR ALTER PROCEDURE ventas.BajaDetalleFactura
-    @ID INT
-AS
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM ventas.DetalleFactura WHERE ID = @ID)
-	BEGIN
-        RAISERROR ('Detalle de factura no encontrado.', 16, 1);
-		RETURN
-	END
-    DELETE FROM ventas.DetalleFactura WHERE ID = @ID;
-END;
-GO
+
 
 CREATE OR ALTER PROCEDURE ventas.ModificarDetalleFactura
     @ID INT,
@@ -561,8 +554,8 @@ AS
 BEGIN
     DECLARE @ID_Venta INT;
 
-    INSERT INTO ventas.Venta (ID_Cliente, Estado, Total,ID_Sucursal)
-    VALUES (@ID_Cliente, 'No pagada', 0, @ID_Sucursal);
+    INSERT INTO ventas.Venta (ID_Cliente, Total,ID_Sucursal)
+    VALUES (@ID_Cliente, 0, @ID_Sucursal);
 END;
 GO
 
@@ -579,6 +572,8 @@ BEGIN
 END;
 GO
 
+
+/*
 CREATE OR ALTER PROCEDURE ventas.ModificarVenta
     @ID INT,
     @ID_Cliente INT,
@@ -608,6 +603,7 @@ BEGIN
     WHERE ID = @ID;
 END;
 GO
+*/
 
 CREATE OR ALTER PROCEDURE ventas.AltaDetalleVenta
     @ID_Venta INT,
@@ -781,12 +777,6 @@ BEGIN
     DECLARE @ID_Venta INT;
     SET @ID_Venta = (SELECT ID FROM ventas.Factura WHERE ID = @ID_Factura);
 
-    IF @ID_Venta IS NOT NULL
-    BEGIN
-        UPDATE ventas.Venta
-        SET Estado = 'Pagada'
-        WHERE ID = @ID_Venta;
-    END;
 END;
 GO
 

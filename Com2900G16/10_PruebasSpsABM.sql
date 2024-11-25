@@ -224,57 +224,95 @@ SELECT * FROM ventas.MedioPago;
 
 -- CASOS DE PRUEBA PARA PROCEDIMIENTOS PARA GENERAR UNA VENTA
 
+
 -- 1. Set de prueba para venta de varios productos.
 EXEC informe.LimpiarTodasLasTablas;
-EXEC tienda.AltaSucursal @Direccion = 'Calle Principal 456', @Ciudad = 'Ciudad Ejemplo', @Ciudad_anterior = NULL;
+GO
+
+EXEC tienda.AltaSucursal @Direccion = 'Calle Principal 456', @Ciudad = 'Ciudad Ejemplo', @Ciudad_anterior = NULL
+
+DECLARE @idSucursal INT = (SELECT  s.ID FROM tienda.Sucursal s WHERE s.Ciudad = 'Ciudad Ejemplo')
+
 EXEC tienda.AltaEmpleado @Legajo = '000002', @Nombre = 'Ana', @Apellido = 'Lopez', @DNI = '87654321',
-    @Mail_Empresa = 'ana.lopez@empresa.com', @CUIL = '27-87654321-9', @Cargo = 'Vendedor', @Turno = 'TT', @ID_Sucursal = 1, @Estado = 1;
+    @Mail_Empresa = 'ana.lopez@empresa.com', @CUIL = '27-87654321-9', @Cargo = 'Vendedor', @Turno = 'TT',
+	@ID_Sucursal = @idSucursal, @Estado = 1;
+
+
 EXEC tienda.AltaCliente @Nombre = 'Laura Garcia', @TipoCliente = 'Member', @Genero = 'F', @Estado = 1, @CUIT = '20-41141444-1';
-EXEC catalogo.AltaCategoriaProducto @LineaProducto = 'Línea Jardín', @Categoria = 'Muebles de Jardín';
 
-Declare @date date
-set @date = getdate()
-EXEC catalogo.AltaProducto 
-    @Nombre = 'Lavadora', 
-    @ID_Categoria = 1, 
-    @PrecioUnitario = 8000.00, 
-    @PrecioReferencia = 8000.00, 
-    @UnidadReferencia = 'Unidad', 
+EXEC catalogo.AltaCategoriaProducto @LineaProducto = N'Línea Jardín', @Categoria = N'Muebles de Jardín';
+
+Declare @date DATETIME = getdate()
+DECLARE @idCategoria INT = (SELECT cp.ID FROM catalogo.CategoriaProducto cp WHERE cp.Categoria = N'Muebles de Jardín')
+
+EXEC catalogo.AltaProducto
+    @Nombre = 'Lavadora',
+    @ID_Categoria = @idCategoria,
+    @PrecioUnitario = 8000.00,
+    @PrecioReferencia = 8000.00,
+    @UnidadReferencia = 'Unidad',
     @Fecha = @date,
 	@IVA = 0.21;
 
-Declare @date date
-set @date = getdate()
-EXEC catalogo.AltaProducto 
-    @Nombre = 'Silla', 
-    @ID_Categoria = 1, 
-    @PrecioUnitario = 8000.00, 
-    @PrecioReferencia = 8000.00, 
-    @UnidadReferencia = 'Unidad', 
+SET @date = getdate()
+EXEC catalogo.AltaProducto
+    @Nombre = 'Silla',
+    @ID_Categoria = @idCategoria,
+    @PrecioUnitario = 8000.00,
+    @PrecioReferencia = 8000.00,
+    @UnidadReferencia = 'Unidad',
     @Fecha = @date,
 	@IVA = 0.21;
 
-EXEC ventas.AltaMedioPago 
-    @Descripcion_ESP = 'Tarjeta de Crédito', 
+EXEC ventas.AltaMedioPago
+    @Descripcion_ESP = N'Tarjeta de Crédito',
     @Descripcion_ENG = 'Credit Card';
+GO
 
---Prueba crear venta
-EXEC ventas.AltaVenta @ID_Cliente = 1, @ID_Sucursal = 1
+--Prueba crear venta (Inicio Venta)
+DECLARE @idCliente INT = (SELECT ID FROM tienda.Cliente WHERE CUIT = '20-41141444-1')
+DECLARE @idSucursal INT = (SELECT ID FROM tienda.Sucursal WHERE Ciudad = 'Ciudad Ejemplo')
+
+EXEC ventas.AltaVenta @ID_Cliente = @idCliente, @ID_Sucursal = @idSucursal
 SELECT * FROM ventas.Venta
+GO
+--Prueba crear detalle venta (Agrego Productos a la venta)
 
---Prueba crear detalle venta
-EXEC ventas.AltaDetalleVenta @ID_Venta=2, @ID_Producto= 2, @Cantidad=2
-EXEC ventas.AltaDetalleVenta @ID_Venta=2, @ID_Producto= 3, @Cantidad=5
+DECLARE @idVenta INT = (SELECT TOP(1) ID FROM ventas.Venta ORDER BY Fecha DESC)
+DECLARE @idProd1 INT = (SELECT MAX(ID) FROM catalogo.Producto)
+DECLARE @idProd2 INT = (SELECT MAX(ID) FROM catalogo.Producto WHERE ID < @idProd1)
+
+EXEC ventas.AltaDetalleVenta @ID_Venta= @idVenta, @ID_Producto= @idProd1, @Cantidad=2
+EXEC ventas.AltaDetalleVenta @ID_Venta= @idVenta, @ID_Producto= @idProd2, @Cantidad=5
 SELECT * FROM ventas.DetalleVenta
+GO
 
---Crear factura
-EXEC ventas.AltaFactura @ID_Venta = 2 , @PuntoDeVenta = 0001,@Comprobante = '00000001'
+SELECT v.ID 'ID_Venta' ,v.Fecha, v.ID_SUCURSAL, dv.ID_Producto, dv.Precio_Unitario, dv.Cantidad, dv.Subtotal, v.Total
+	FROM ventas.Venta v
+	JOIN ventas.DetalleVenta dv ON v.ID = dv.ID_Venta
+
+--Crear factura (Fin Venta)
+DECLARE @idVenta INT = (SELECT TOP(1) ID FROM ventas.Venta ORDER BY Fecha DESC)
+EXEC ventas.AltaFactura @ID_Venta = @idVenta , @PuntoDeVenta = 0001,@Comprobante = '--'
 SELECT * FROM ventas.Factura
+GO
+--Crear detalle factura (Continuacion Fin Venta)
+DECLARE @idVenta INT = (SELECT TOP(1) ID FROM ventas.Venta ORDER BY Fecha DESC)
+DECLARE @idFactura INT = (SELECT TOP(1) ID FROM ventas.Factura ORDER BY FechaHora DESC)
 
---Crear detalle factura
-EXEC ventas.AltaDetalleFactura @ID_Venta = 2, @ID_Factura = 1
+EXEC ventas.AltaDetalleFactura @ID_Venta = @idVenta, @ID_Factura = @idFactura
 SELECT * FROM ventas.DetalleFactura
-
+GO
 --Crear pago
-EXEC ventas.AltaPago @ID_Factura = 1, @ID_MedioPago = 1, @Monto = 30705.00
+DECLARE @idFactura INT = (SELECT TOP(1) ID FROM ventas.Factura ORDER BY FechaHora DESC)
+DECLARE @montoAPagar DECIMAL(10,2) = (SELECT Total FROM ventas.Factura WHERE ID = @idFactura)
+DECLARE @medioDePago INT = (SELECT MAX(ID) FROM ventas.MedioPago)
+
+EXEC ventas.AltaPago @ID_Factura = @idFactura, @ID_MedioPago = @medioDePago,
+     @Monto = @montoAPagar
 SELECT * FROM ventas.Pago
+
+
+SELECT *
+    FROM ventas.Factura f
+    JOIN ventas.Venta v ON f.ID_Venta = v.ID
