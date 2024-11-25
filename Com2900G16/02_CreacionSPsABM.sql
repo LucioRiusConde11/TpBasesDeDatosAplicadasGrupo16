@@ -550,13 +550,14 @@ GO
 
 CREATE OR ALTER PROCEDURE ventas.AltaVenta
     @ID_Cliente INT,
-	@ID_Sucursal INT 
+	@ID_Sucursal INT,
+	@ID_Empleado INT
 AS
 BEGIN
     DECLARE @ID_Venta INT;
 
-    INSERT INTO ventas.Venta (ID_Cliente, Total,ID_Sucursal)
-    VALUES (@ID_Cliente, 0, @ID_Sucursal);
+    INSERT INTO ventas.Venta (ID_Cliente, Total,ID_Sucursal,ID_Empleado)
+    VALUES (@ID_Cliente, 0, @ID_Sucursal,@ID_Empleado);
 END;
 GO
 
@@ -574,22 +575,17 @@ END;
 GO
 
 
-/*
+
 CREATE OR ALTER PROCEDURE ventas.ModificarVenta
     @ID INT,
     @ID_Cliente INT,
-    @Estado VARCHAR(50),
-    @id_factura_importado VARCHAR(30)
+    @id_factura_importado VARCHAR(30),
+	@ID_Empleado INT
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM tienda.Cliente WHERE ID = @ID_Cliente)
 	BEGIN
         RAISERROR ('Cliente no encontrado.', 16, 1);
-		RETURN
-	END
-    IF @Estado NOT IN ('Pendiente', 'Completada', 'Cancelada')
-	BEGIN
-        RAISERROR ('Estado de venta no válido.', 16, 1);
 		RETURN
 	END
     IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID)
@@ -599,12 +595,12 @@ BEGIN
 	END
     UPDATE ventas.Venta
     SET ID_Cliente = @ID_Cliente,
-        Estado = @Estado,
+        ID_Empleado = @ID_Empleado,
         id_factura_importado = @id_factura_importado
     WHERE ID = @ID;
 END;
 GO
-*/
+
 
 CREATE OR ALTER PROCEDURE ventas.AltaDetalleVenta
     @ID_Venta INT,

@@ -123,8 +123,10 @@ CREATE TABLE ventas.Venta (
     Total DECIMAL(18,2) NOT NULL,
 	id_factura_importado VARCHAR(30),
 	ID_SUCURSAL INT NOT NULL,
+	ID_Empleado INT NOT NULL,
 	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
+	FOREIGN KEY (ID_Empleado) REFERENCES tienda.Empleado(ID) ON DELETE NO ACTION,
 );
 
 IF OBJECT_ID(N'ventas.DetalleVenta') IS NOT NULL
