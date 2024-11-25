@@ -444,9 +444,10 @@ BEGIN
         RAISERROR ('No se puede eliminar una factura pagada.', 16, 1);
 		RETURN
 	END
-    DELETE FROM ventas.Factura WHERE ID = @ID;
+
 	UPDATE ventas.Factura
 		SET Estado = 'Cancelada'
+		WHERE ID = @ID;
 END;
 
 GO
