@@ -623,6 +623,13 @@ BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
 		RETURN
 	END
+
+	IF EXISTS (SELECT 1 FROM ventas.DetalleVenta WHERE ID_Producto = @ID_Producto AND ID_Venta = @ID_Venta)
+	BEGIN
+        RAISERROR ('Modifique detalle ya existente.', 16, 1);
+		RETURN
+	END
+
     SELECT @PrecioUnitario = PrecioUnitario
     FROM catalogo.Producto
     WHERE ID = @ID_Producto;

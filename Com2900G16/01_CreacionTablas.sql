@@ -1,5 +1,4 @@
 USE Com2900G16;
-USE Com2900G16;
 GO
 /*
 --Alumnos
@@ -140,6 +139,7 @@ CREATE TABLE ventas.DetalleVenta (
     Cantidad INT NOT NULL,
     Precio_Unitario DECIMAL(18,2) NOT NULL,
     Subtotal  DECIMAL(18,2) NOT NULL,
+	Estado BIT DEFAULT 0, --Si es 1 se volvio el detalle con nota de credito 
     FOREIGN KEY (ID_Venta) REFERENCES ventas.Venta(ID)
 );
 
@@ -173,6 +173,7 @@ CREATE TABLE ventas.DetalleFactura (
     PrecioUnitario DECIMAL(10, 2) NOT NULL,
 	IVA DECIMAL(18,2) NOT NULL,
     Subtotal  DECIMAL(10,2) ,
+	Estado BIT DEFAULT 0, --Si es 1 se volvio el detalle con nota de credito 
     FOREIGN KEY (ID_Factura) REFERENCES ventas.Factura(ID) ON DELETE CASCADE,
     FOREIGN KEY (ID_Producto) REFERENCES catalogo.Producto(ID) ON DELETE NO ACTION
 );
@@ -199,7 +200,7 @@ CREATE TABLE ventas.NotaCredito (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     ID_Factura INT NOT NULL,
 	ID_Cliente INT NOT NULL, 
-	ID_Producto INT NOT NULL,
+	ID_Producto INT NULL,
     FechaEmision DATETIME DEFAULT GETDATE(),
     Motivo VARCHAR(255), --Cambió
 	Comprobante VARCHAR(10) NOT NULL,
