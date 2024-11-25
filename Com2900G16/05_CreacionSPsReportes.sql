@@ -1,221 +1,194 @@
 USE Com2900G16;
 GO
-/*
---Alumnos
-<Avella Mateo, 45318319
-<Rius Conde Lucio, 41779534
-<
 
-GRUPO 16
-ENTREGA: 05/11/24
-
-Se requiere que importe toda la información antes mencionada a la base de datos:
-	• Genere los objetos necesarios (store procedures, funciones, etc.) para importar los
-	archivos antes mencionados. Tenga en cuenta que cada mes se recibirán archivos de
-	novedades con la misma estructura, pero datos nuevos para agregar a cada maestro.
-	• Considere este comportamiento al generar el código. Debe admitir la importación de
-	novedades periódicamente.
-	• Cada maestro debe importarse con un SP distinto. No se aceptarán scripts que
-	realicen tareas por fuera de un SP.
-	• La estructura/esquema de las tablas a generar será decisión suya. Puede que deba
-	realizar procesos de transformación sobre los maestros recibidos para adaptarlos a la
-	estructura requerida.
-	• Los archivos CSV/JSON no deben modificarse. En caso de que haya datos mal
-	cargados, incompletos, erróneos, etc., deberá contemplarlo y realizar las correcciones
-	en el fuente SQL. (Sería una excepción si el archivo está malformado y no es posible
-	interpretarlo como JSON o CSV). 
-
-*/
 -- 1. Reporte Mensual: Total facturado por días de la semana
 CREATE OR ALTER PROCEDURE informe.ObtenerReporteMensualPorDias
     @Mes INT,
     @Anio INT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        DATENAME(WEEKDAY, FechaHora) AS DiaSemana,
-        SUM(PrecioUnitario * Cantidad) AS TotalFacturado
-    FROM
-        ventas.Factura f
-    JOIN
-        ventas.DetalleFactura df ON f.ID = df.ID_Factura
-    WHERE
-        MONTH(f.FechaHora) = @Mes AND YEAR(f.FechaHora) = @Anio
-    GROUP BY
-        DATENAME(WEEKDAY, FechaHora)
-    ORDER BY
-        CASE DATENAME(WEEKDAY, FechaHora)
-            WHEN 'Sunday' THEN 1
-            WHEN 'Monday' THEN 2
-            WHEN 'Tuesday' THEN 3
-            WHEN 'Wednesday' THEN 4
-            WHEN 'Thursday' THEN 5
-            WHEN 'Friday' THEN 6
-            WHEN 'Saturday' THEN 7
+    SELECT 
+        DATENAME(WEEKDAY, V.Fecha) AS DiaSemana,
+        SUM(F.Total - ISNULL(NC.TotalAjustado, 0)) AS TotalFacturado
+    FROM ventas.Venta V
+    INNER JOIN ventas.Factura F ON V.ID = F.ID_Venta
+    LEFT JOIN (
+        SELECT NC.ID_Factura, SUM(DF.Cantidad * DF.PrecioUnitario + DF.IVA) AS TotalAjustado
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY NC.ID_Factura
+    ) NC ON F.ID = NC.ID_Factura
+    WHERE MONTH(V.Fecha) = @Mes AND YEAR(V.Fecha) = @Anio
+    GROUP BY DATENAME(WEEKDAY, V.Fecha)
+    ORDER BY 
+        CASE DATENAME(WEEKDAY, V.Fecha)
+            WHEN 'Lunes' THEN 1
+            WHEN 'Martes' THEN 2
+            WHEN 'Miércoles' THEN 3
+            WHEN 'Jueves' THEN 4
+            WHEN 'Viernes' THEN 5
+            WHEN 'Sábado' THEN 6
+            WHEN 'Domingo' THEN 7
         END
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
-
+GO
 
 -- 2. Reporte Trimestral: Total facturado por turnos de trabajo por mes
-GO
 CREATE OR ALTER PROCEDURE informe.ObtenerReporteTrimestralPorTurnos
-    @Trimestre INT
+    @Trimestre INT,
+    @Anio INT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        MONTH(FechaHora) AS Mes,
-        Turno,
-        SUM(PrecioUnitario * Cantidad) AS TotalFacturado
-    FROM
-        ventas.Factura f
-    JOIN
-        ventas.DetalleFactura df ON f.ID = df.ID_Factura
-    JOIN
-        tienda.Empleado e ON f.ID_Empleado = e.ID
-    WHERE
-        MONTH(f.FechaHora) BETWEEN (3 * @Trimestre - 2) AND (3 * @Trimestre)
-    GROUP BY
-        MONTH(FechaHora), Turno
-    ORDER BY
-        Mes
+    SELECT 
+        MONTH(V.Fecha) AS Mes,
+        E.Turno,
+        SUM(F.Total - ISNULL(NC.TotalAjustado, 0)) AS TotalFacturado
+    FROM ventas.Venta V
+    INNER JOIN ventas.Factura F ON V.ID = F.ID_Venta
+    INNER JOIN tienda.Empleado E ON V.ID_Cliente = E.ID
+    LEFT JOIN (
+        SELECT NC.ID_Factura, SUM(DF.Cantidad * DF.PrecioUnitario + DF.IVA) AS TotalAjustado
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY NC.ID_Factura
+    ) NC ON F.ID = NC.ID_Factura
+    WHERE (MONTH(V.Fecha) - 1) / 3 + 1 = @Trimestre AND YEAR(V.Fecha) = @Anio
+    GROUP BY MONTH(V.Fecha), E.Turno
+    ORDER BY Mes, E.Turno
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
+GO
 
 -- 3. Reporte por Rango de Fechas: Cantidad de productos vendidos
-GO
 CREATE OR ALTER PROCEDURE informe.ObtenerProductosVendidosPorRangoFechas
     @FechaInicio DATETIME,
     @FechaFin DATETIME
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        p.Nombre,
-        SUM(df.Cantidad) AS CantidadVendida
-    FROM
-        ventas.DetalleFactura df
-    JOIN
-        ventas.Factura f ON df.ID_Factura = f.ID
-    JOIN
-        catalogo.Producto p ON df.ID_Producto = p.ID
-    WHERE
-        f.FechaHora BETWEEN @FechaInicio AND @FechaFin
-    GROUP BY
-        p.Nombre
-    ORDER BY
-        CantidadVendida DESC
+    SELECT 
+        P.Nombre AS Producto,
+        SUM(DV.Cantidad - ISNULL(NC.CantidadAjustada, 0)) AS TotalVendido
+    FROM ventas.DetalleVenta DV
+    INNER JOIN catalogo.Producto P ON DV.ID_Producto = P.ID
+    LEFT JOIN (
+        SELECT DF.ID_Producto, SUM(DF.Cantidad) AS CantidadAjustada
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY DF.ID_Producto
+    ) NC ON DV.ID_Producto = NC.ID_Producto
+    WHERE DV.ID_Venta IN (
+        SELECT ID FROM ventas.Venta WHERE Fecha BETWEEN @FechaInicio AND @FechaFin
+    )
+    GROUP BY P.Nombre
+    ORDER BY TotalVendido DESC
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
+GO
 
 -- 4. Reporte por Rango de Fechas: Cantidad de productos vendidos por sucursal
-GO
-CREATE OR ALTER  PROCEDURE informe.ObtenerProductosVendidosPorRangoFechasSucursal
+CREATE OR ALTER PROCEDURE informe.ObtenerProductosVendidosPorRangoFechasSucursal
     @FechaInicio DATETIME,
     @FechaFin DATETIME
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        s.Direccion,
-        p.Nombre,
-        SUM(df.Cantidad) AS CantidadVendida
-    FROM
-        ventas.DetalleFactura df
-    JOIN
-        ventas.Factura f ON df.ID_Factura = f.ID
-    JOIN
-        catalogo.Producto p ON df.ID_Producto = p.ID
-    JOIN
-        tienda.Sucursal s ON f.ID_Sucursal = s.ID
-    WHERE
-        f.FechaHora BETWEEN @FechaInicio AND @FechaFin
-    GROUP BY
-        s.Direccion, p.Nombre
-    ORDER BY
-        CantidadVendida DESC
+    SELECT 
+        S.Direccion AS Sucursal,
+        P.Nombre AS Producto,
+        SUM(DV.Cantidad - ISNULL(NC.CantidadAjustada, 0)) AS TotalVendido
+    FROM ventas.DetalleVenta DV
+    INNER JOIN catalogo.Producto P ON DV.ID_Producto = P.ID
+    INNER JOIN tienda.Sucursal S ON DV.ID_Venta = S.ID
+    LEFT JOIN (
+        SELECT DF.ID_Producto, SUM(DF.Cantidad) AS CantidadAjustada
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY DF.ID_Producto
+    ) NC ON DV.ID_Producto = NC.ID_Producto
+    WHERE DV.ID_Venta IN (
+        SELECT ID FROM ventas.Venta WHERE Fecha BETWEEN @FechaInicio AND @FechaFin
+    )
+    GROUP BY S.Direccion, P.Nombre
+    ORDER BY TotalVendido DESC
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
+GO
 
 -- 5. Top 5 Productos Más Vendidos en un Mes
-GO
-CREATE OR ALTER  PROCEDURE informe.ObtenerTop5ProductosVendidosPorMes
+CREATE OR ALTER PROCEDURE informe.ObtenerTop5ProductosVendidosPorMes
     @Mes INT,
     @Anio INT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT TOP 5
-        p.Nombre,
-        SUM(df.Cantidad) AS CantidadVendida
-    FROM
-        ventas.DetalleFactura df
-    JOIN
-        ventas.Factura f ON df.ID_Factura = f.ID
-    JOIN
-        catalogo.Producto p ON df.ID_Producto = p.ID
-    WHERE
-        MONTH(f.FechaHora) = @Mes AND YEAR(f.FechaHora) = @Anio
-    GROUP BY
-        p.Nombre
-    ORDER BY
-        CantidadVendida DESC
+    SELECT 
+        P.Nombre AS Producto,
+        SUM(DV.Cantidad - ISNULL(NC.CantidadAjustada, 0)) AS TotalVendido
+    FROM ventas.DetalleVenta DV
+    INNER JOIN catalogo.Producto P ON DV.ID_Producto = P.ID
+    INNER JOIN ventas.Venta V ON DV.ID_Venta = V.ID
+    LEFT JOIN (
+        SELECT DF.ID_Producto, SUM(DF.Cantidad) AS CantidadAjustada
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY DF.ID_Producto
+    ) NC ON DV.ID_Producto = NC.ID_Producto
+    WHERE MONTH(V.Fecha) = @Mes AND YEAR(V.Fecha) = @Anio
+    GROUP BY P.Nombre
+    ORDER BY TotalVendido DESC
+    OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
+GO
 
 -- 6. Top 5 Productos Menos Vendidos en un Mes
-GO
-CREATE OR ALTER  PROCEDURE informe.ObtenerTop5ProductosMenosVendidosPorMes
+CREATE OR ALTER PROCEDURE informe.ObtenerTop5ProductosMenosVendidosPorMes
     @Mes INT,
     @Anio INT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT TOP 5
-        p.Nombre,
-        SUM(df.Cantidad) AS CantidadVendida
-    FROM
-        ventas.DetalleFactura df
-    JOIN
-        ventas.Factura f ON df.ID_Factura = f.ID
-    JOIN
-        catalogo.Producto p ON df.ID_Producto = p.ID
-    WHERE
-        MONTH(f.FechaHora) = @Mes AND YEAR(f.FechaHora) = @Anio
-    GROUP BY
-        p.Nombre
-    ORDER BY
-        CantidadVendida ASC
+    SELECT 
+        P.Nombre AS Producto,
+        SUM(DV.Cantidad - ISNULL(NC.CantidadAjustada, 0)) AS TotalVendido
+    FROM ventas.DetalleVenta DV
+    INNER JOIN catalogo.Producto P ON DV.ID_Producto = P.ID
+    LEFT JOIN (
+        SELECT DF.ID_Producto, SUM(DF.Cantidad) AS CantidadAjustada
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY DF.ID_Producto
+    ) NC ON DV.ID_Producto = NC.ID_Producto
+    WHERE MONTH(DV.ID_Venta) = @Mes AND YEAR(DV.ID_Venta) = @Anio
+    GROUP BY P.Nombre
+    ORDER BY TotalVendido ASC
+    OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
+GO
 
 -- 7. Total Acumulado de Ventas para una Fecha y Sucursal
-GO
 CREATE OR ALTER PROCEDURE informe.ObtenerTotalAcumuladoVentasPorFechaYSucursal
     @Fecha DATE,
     @SucursalID INT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        SUM(PrecioUnitario * Cantidad) AS TotalAcumulado,
-        f.FechaHora
-    FROM
-        ventas.DetalleFactura df
-    JOIN
-        ventas.Factura f ON df.ID_Factura = f.ID
-    WHERE
-        CAST(f.FechaHora AS DATE) = @Fecha AND f.ID_Sucursal = @SucursalID
-    GROUP BY
-        f.FechaHora
+    SELECT 
+        S.Direccion AS Sucursal,
+        V.Fecha,
+        SUM(F.Total - ISNULL(NC.TotalAjustado, 0)) AS TotalFacturado,
+        STRING_AGG(P.Nombre + ': ' + CAST(DV.Cantidad AS VARCHAR), ', ') AS Detalle
+    FROM ventas.Venta V
+    INNER JOIN ventas.Factura F ON V.ID = F.ID_Venta
+    INNER JOIN tienda.Sucursal S ON V.ID_Sucursal = S.ID
+    INNER JOIN ventas.DetalleVenta DV ON V.ID = DV.ID_Venta
+    INNER JOIN catalogo.Producto P ON DV.ID_Producto = P.ID
+    LEFT JOIN (
+        SELECT NC.ID_Factura, SUM(DF.Cantidad * DF.PrecioUnitario + DF.IVA) AS TotalAjustado
+        FROM ventas.NotaCredito NC
+        INNER JOIN ventas.DetalleFactura DF ON NC.ID_Factura = DF.ID_Factura
+        GROUP BY NC.ID_Factura
+    ) NC ON F.ID = NC.ID_Factura
+    WHERE CAST(V.Fecha AS DATE) = @Fecha AND S.ID = @SucursalID
+    GROUP BY S.Direccion, V.Fecha
     FOR XML PATH('Row'), ROOT('Reporte');
 END;
+GO

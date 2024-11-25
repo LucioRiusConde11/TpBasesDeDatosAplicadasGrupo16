@@ -397,16 +397,17 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE ventas.AltaDetalleFactura
+CREATE OR ALTER PROCEDURE ventas.AltaDetalleFactura
     @ID_Venta INT,
     @ID_Factura INT
 AS
 BEGIN
+    -- Validaciones
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura)
         RAISERROR ('Factura no encontrada.', 16, 1);
-	IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+    IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
         RAISERROR ('Venta no encontrada.', 16, 1);
-	IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID_Venta = @ID_Venta AND ID= @ID_Factura)
+    IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID_Venta = @ID_Venta AND ID = @ID_Factura)
         RAISERROR ('Factura no coincide con venta.', 16, 1);
 
     INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IVA, Subtotal)
@@ -415,26 +416,43 @@ BEGIN
         DV.ID_Producto,
         DV.Cantidad,
         P.PrecioUnitario,
-        P.PrecioUnitario * P.IVA AS IVA,
-        (DV.Cantidad * P.PrecioUnitario) + (DV.Cantidad * P.PrecioUnitario * 0.21) AS Subtotal
+        (P.PrecioUnitario * P.IVA) AS IVA,
+        (DV.Subtotal + (DV.Subtotal * P.IVA)) AS Subtotal
     FROM 
         ventas.DetalleVenta DV
     INNER JOIN 
         catalogo.Producto P ON DV.ID_Producto = P.ID
     WHERE 
         DV.ID_Venta = @ID_Venta;
+
+    -- Cálculo de totales
+    DECLARE @IVATotal DECIMAL(18, 2);
+    SELECT @IVATotal = SUM(IVA)
+    FROM ventas.DetalleFactura
+    WHERE ID_Factura = @ID_Factura;
+
+    DECLARE @Subtotal DECIMAL(18, 2);
+    SELECT @Subtotal = SUM(Subtotal) 
+    FROM ventas.DetalleVenta
+    WHERE ID_Venta = @ID_Venta;
+
+    -- Actualización de la factura
+    UPDATE ventas.Factura
+    SET 
+        IvaTotal = @IVATotal,
+        SubTotal = @Subtotal,
+        Total = @IVATotal + @Subtotal
+    WHERE ID = @ID_Factura;
 END;
+
 
 GO
 CREATE OR ALTER PROCEDURE ventas.BajaDetalleFactura
     @ID INT
 AS
 BEGIN
-    -- Verificar si el detalle existe
     IF NOT EXISTS (SELECT 1 FROM ventas.DetalleFactura WHERE ID = @ID)
         RAISERROR ('Detalle de factura no encontrado.', 16, 1);
-
-    -- Baja del detalle de la factura
     DELETE FROM ventas.DetalleFactura WHERE ID = @ID;
 END;
 GO
@@ -454,13 +472,14 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE ventas.AltaVenta
-    @ID_Cliente INT
+    @ID_Cliente INT,
+	@ID_Sucursal
 AS
 BEGIN
     DECLARE @ID_Venta INT;
 
-    INSERT INTO ventas.Venta (ID_Cliente, Estado, Total)
-    VALUES (@ID_Cliente, 'Pendiente', 0);
+    INSERT INTO ventas.Venta (ID_Cliente, Estado, Total,ID_Sucursal)
+    VALUES (@ID_Cliente, 'Pendiente', 0,@ID_Sucursal);
 END;
 GO
 
@@ -520,8 +539,8 @@ BEGIN
         RAISERROR ('El producto especificado no existe o no tiene un precio definido.', 16, 1);
     END
 
-    INSERT INTO ventas.DetalleVenta (ID_Venta, ID_Producto, Cantidad, Precio_Unitario)
-    VALUES (@ID_Venta, @ID_Producto, @Cantidad, @PrecioUnitario);
+    INSERT INTO ventas.DetalleVenta (ID_Venta, ID_Producto, Cantidad, Precio_Unitario,Subtotal)
+    VALUES (@ID_Venta, @ID_Producto, @Cantidad, @PrecioUnitario, @Cantidad *  @PrecioUnitario);
 
     SET @Subtotal = @Cantidad * @PrecioUnitario;
 
@@ -595,7 +614,9 @@ BEGIN
     UPDATE ventas.DetalleVenta
     SET ID_Producto = @ID_Producto,
         Cantidad = @Cantidad,
-        Precio_Unitario = @PrecioUnitario;
+        Precio_Unitario = @PrecioUnitario,
+		SubTotal = @Cantidad * @PrecioUnitario
+	WHERE ID = @ID;
 	
 	SELECT @Subtotal = Total
 		FROM ventas.Venta

@@ -27,46 +27,94 @@ Se requiere que importe toda la información antes mencionada a la base de datos:
 */
 -- Procedimiento para Generar Nota de Crédito
 GO
-CREATE OR ALTER PROCEDURE ventas.CrearNotaCredito
-    @ID_Factura INT,
-    @ID_Producto INT,
-	@IdCliente INT,
-    @Motivo VARCHAR(255),
-	@PuntoDeVenta CHAR(5),
-	@Comprobante INT
+CREATE PROCEDURE ventas.CrearNotaCredito
+    @ID_Factura INT,              
+    @ID_Cliente INT,              
+    @ID_Producto INT = NULL,      
+    @Cantidad INT = NULL,         
+    @Motivo VARCHAR(255),         
+    @Comprobante VARCHAR(10)              
 AS
 BEGIN
-    IF EXISTS (
-        SELECT 1 
-        FROM ventas.Factura AS f
-        JOIN ventas.DetalleFactura AS df ON f.ID = df.ID_Factura
-        WHERE f.ID = @ID_Factura 
-		  AND f.ID = @idCliente
-          AND df.ID_Producto = @ID_Producto
-		  AND f.Estado = 'Pagada' 
-    )
-    BEGIN
+    BEGIN TRY
         BEGIN TRANSACTION;
-        
-        BEGIN TRY
-            INSERT INTO ventas.NotaCredito (ID_Factura, ID_Cliente, ID_Producto, Motivo,PuntoDeVenta,Comprobante)
-            VALUES (@ID_Factura,@IdCliente, @ID_Producto, @Motivo,@PuntoDeVenta,@Comprobante);
 
-            UPDATE ventas.DetalleFactura
-            SET PrecioUnitario = 0
-            WHERE ID_Factura = @ID_Factura
-              AND ID_Producto = @ID_Producto;
+        IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura AND Estado IN ('Pagada', 'No pagada'))
+            RAISERROR('La factura no existe o no es válida para una nota de crédito.', 16,1);
 
-            COMMIT TRANSACTION;
-        END TRY
-        BEGIN CATCH
-            ROLLBACK TRANSACTION;
-            RAISERROR('Error al crear la nota de crédito o al actualizar el detalle de la factura.', 16, 1);
-        END CATCH;
-    END
-    ELSE
-        RAISERROR('Error: No existe una factura con el producto especificado para el cliente.', 16, 1);
+        IF NOT EXISTS (SELECT 1 FROM ventas.Factura F
+                       INNER JOIN ventas.Venta V ON F.ID_Venta = V.ID
+                       WHERE F.ID = @ID_Factura AND V.ID_Cliente = @ID_Cliente)
+            RAISERROR('El cliente no coincide con la factura especificada.', 16,1);
+
+        IF @ID_Producto IS NOT NULL
+        BEGIN
+            IF NOT EXISTS (SELECT 1 
+                           FROM ventas.DetalleFactura DF
+                           WHERE DF.ID_Factura = @ID_Factura AND DF.ID_Producto = @ID_Producto)
+                RAISERROR('El producto especificado no pertenece a la factura.', 16,1);
+        END;
+
+        -- Calcular las cantidades y totales afectados
+        DECLARE @CantidadAfectada INT;
+        DECLARE @PrecioUnitario DECIMAL(18, 2);
+        DECLARE @IVA DECIMAL(18, 2);
+        DECLARE @SubtotalAfectado DECIMAL(18, 2);
+        DECLARE @TotalAfectado DECIMAL(18, 2);
+
+        IF @ID_Producto IS NOT NULL
+        BEGIN
+            -- Obtener detalles del producto en la factura
+            SELECT TOP 1 
+                @CantidadAfectada = CASE WHEN @Cantidad IS NOT NULL THEN @Cantidad ELSE DF.Cantidad END,
+                @PrecioUnitario = DF.PrecioUnitario,
+                @IVA = DF.IVA
+            FROM ventas.DetalleFactura DF
+            WHERE DF.ID_Factura = @ID_Factura AND DF.ID_Producto = @ID_Producto;
+
+            -- Verificar que la cantidad no exceda la registrada en la factura
+            IF @CantidadAfectada > (SELECT Cantidad FROM ventas.DetalleFactura
+                                    WHERE ID_Factura = @ID_Factura AND ID_Producto = @ID_Producto)
+                THROW 50004, 'La cantidad especificada excede la registrada en la factura.', 1;
+        END
+        ELSE
+        BEGIN
+            -- Si no se especifica producto, afecta toda la factura
+            SELECT 
+                @SubtotalAfectado = SubTotal,
+                @IVA = IvaTotal,
+                @TotalAfectado = Total
+            FROM ventas.Factura
+            WHERE ID = @ID_Factura;
+        END;
+
+        -- Calcular totales afectados
+        IF @ID_Producto IS NOT NULL
+        BEGIN
+            SET @SubtotalAfectado = @CantidadAfectada * @PrecioUnitario;
+            SET @TotalAfectado = @SubtotalAfectado + (@SubtotalAfectado * @IVA);
+        END;
+
+        INSERT INTO ventas.NotaCredito (ID_Factura, ID_Cliente, ID_Producto, FechaEmision, Motivo,Comprobante)
+        VALUES (@ID_Factura, @ID_Cliente, @ID_Producto, GETDATE(), @Motivo, @Comprobante);
+
+        IF NOT EXISTS (SELECT 1 FROM ventas.DetalleFactura DF
+                       WHERE DF.ID_Factura = @ID_Factura
+                       AND DF.Cantidad > 0) 
+        BEGIN
+            UPDATE ventas.Factura
+            SET Estado = 'Cancelada'
+            WHERE ID = @ID_Factura;
+        END;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION
+    END CATCH
 END;
+GO
+
 GO
 
 GO
