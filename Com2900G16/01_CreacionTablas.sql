@@ -122,11 +122,9 @@ CREATE TABLE ventas.Venta (
     ID_Cliente INT NULL, 
     Total DECIMAL(18,2) NOT NULL,
 	id_factura_importado VARCHAR(30),
-    Estado VARCHAR(11) NOT NULL,
 	ID_SUCURSAL INT NOT NULL,
 	FOREIGN KEY (ID_Cliente) REFERENCES tienda.Cliente(ID) ON DELETE NO ACTION,
 	FOREIGN KEY (ID_Sucursal) REFERENCES tienda.Sucursal(ID) ON DELETE NO ACTION,
-	CHECK (Estado IN ('Pagada', 'No pagada','Cancelada'))
 );
 
 IF OBJECT_ID(N'ventas.DetalleVenta') IS NOT NULL
@@ -139,7 +137,6 @@ CREATE TABLE ventas.DetalleVenta (
     Cantidad INT NOT NULL,
     Precio_Unitario DECIMAL(18,2) NOT NULL,
     Subtotal  DECIMAL(18,2) NOT NULL,
-	Estado BIT DEFAULT 0, --Si es 1 se volvio el detalle con nota de credito 
     FOREIGN KEY (ID_Venta) REFERENCES ventas.Venta(ID)
 );
 
