@@ -1,7 +1,7 @@
 /*
 --Alumnos
 <Avella Mateo, 45318319
-<Rius Conde Lucio, 41779534
+<Rius Conde Lucio, 41679534
 <
 
 GRUPO 16
@@ -35,7 +35,10 @@ CREATE OR ALTER PROCEDURE tienda.AltaSucursal
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Sucursal WHERE Direccion = @Direccion)
+	BEGIN
         RAISERROR ('Error: La dirección de la sucursal ya existe.', 16, 1);
+		RETURN;
+	END;
 
     INSERT INTO tienda.Sucursal (Direccion, Ciudad, Ciudad_anterior)
     VALUES (@Direccion, @Ciudad, @Ciudad_anterior);
@@ -47,7 +50,10 @@ CREATE OR ALTER PROCEDURE tienda.BajaSucursal
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM tienda.Sucursal WHERE ID = @ID)
-		 RAISERROR ('Error: Id incorrecto.', 16, 1);
+		BEGIN
+			RAISERROR ('Error: Id incorrecto.', 16, 1);
+			RETURN
+		END
 
     DELETE FROM tienda.Sucursal WHERE ID = @ID;
 END;
@@ -61,8 +67,10 @@ CREATE OR ALTER PROCEDURE tienda.ModificarSucursal
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Sucursal WHERE Direccion = @Direccion AND ID <> @ID)
-        RAISERROR ('Error: La dirección de la sucursal ya existe.', 16, 1);
-
+        BEGIN
+			RAISERROR ('Error: La dirección de la sucursal ya existe.', 16, 1);
+			RETURN
+		END
     UPDATE tienda.Sucursal
     SET Direccion = @Direccion,
         Ciudad = @Ciudad,
@@ -86,7 +94,10 @@ CREATE OR ALTER PROCEDURE tienda.AltaEmpleado
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Empleado WHERE Legajo = @Legajo)
-        RAISERROR ('Error: El legajo del empleado ya existe.', 16, 1);
+    BEGIN
+		RAISERROR ('Error: El legajo del empleado ya existe.', 16, 1);
+		RETURN
+	END
 
     INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, MailEmpresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
     VALUES (@Legajo, @Nombre, @Apellido, @DNI, @Mail_Empresa, @CUIL, @Cargo, @Turno, @ID_Sucursal, @Estado);
@@ -98,7 +109,10 @@ CREATE OR ALTER PROCEDURE tienda.BajaEmpleado
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM tienda.Empleado WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Error: Id incorrecto.', 16, 1);
+		RETURN
+	END
 
     DELETE FROM tienda.Empleado WHERE ID = @ID;
 END;
@@ -119,10 +133,16 @@ CREATE OR ALTER PROCEDURE tienda.ModificarEmpleado
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM tienda.Empleado WHERE Legajo = @Legajo AND ID <> @ID)
-        RAISERROR ('Error: El legajo del empleado ya existe.', 16, 1);
+    BEGIN
+		RAISERROR ('Error: El legajo del empleado ya existe.', 16, 1);
+		RETURN
+	END
 
     IF NOT EXISTS (SELECT 1 FROM tienda.Empleado WHERE ID = @ID)
-        RAISERROR ('Error: Id incorrecto.', 16, 1);
+	BEGIN        
+		RAISERROR ('Error: Id incorrecto.', 16, 1);
+		RETURN
+	END
 
     UPDATE tienda.Empleado
     SET Legajo = @Legajo,
@@ -149,14 +169,21 @@ CREATE OR ALTER PROCEDURE tienda.AltaCliente
 AS
 BEGIN
     IF @TipoCliente NOT IN ('Member', 'Normal')
-        RAISERROR ('Error: Tipo de cliente inválido.', 16, 1);
+	BEGIN        
+		RAISERROR ('Error: Tipo de cliente inválido.', 16, 1);
+		RETURN
+	END
 
     IF @Genero NOT IN ('F', 'M')
-        RAISERROR ('Error: Género inválido.', 16, 1);
-
+	BEGIN        
+		RAISERROR ('Error: Género inválido.', 16, 1);
+		RETURN
+	END
     IF EXISTS (SELECT 1 FROM tienda.Cliente WHERE CUIT = @CUIT AND @CUIT IS NOT NULL)
-        RAISERROR ('Error: CUIT ya utilizado.', 16, 1);
-
+	BEGIN        
+		RAISERROR ('Error: CUIT ya utilizado.', 16, 1);
+		RETURN
+	END
     INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado,CUIT)
     VALUES (@Nombre, @TipoCliente, @Genero, @Estado,@CUIT);
 END;
@@ -167,7 +194,10 @@ CREATE OR ALTER PROCEDURE tienda.BajaCliente
 AS
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM tienda.Cliente WHERE @ID = ID)
-        RAISERROR ('Error: ID incorrecto.', 16, 1);
+	BEGIN
+		RAISERROR ('Error: ID incorrecto.', 16, 1);
+		RETURN
+	END
     DELETE FROM tienda.Cliente WHERE ID = @ID;
 END;
 GO
@@ -181,14 +211,20 @@ CREATE OR ALTER PROCEDURE tienda.ModificarCliente
 AS
 BEGIN
     IF @TipoCliente NOT IN ('Member', 'Normal')
+	BEGIN
         RAISERROR ('Error: Tipo de cliente inválido.', 16, 1);
-
+		RETURN
+	END
     IF @Genero NOT IN ('F', 'M')
+	BEGIN
         RAISERROR ('Error: Género inválido.', 16, 1);
-
+		RETURN
+	END
 	IF NOT EXISTS (SELECT 1 FROM tienda.Cliente WHERE @ID = ID)
+	BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
-
+		RETURN
+	END
     UPDATE tienda.Cliente
     SET Nombre = @Nombre,
         TipoCliente = @TipoCliente,
@@ -205,8 +241,10 @@ CREATE OR ALTER PROCEDURE catalogo.AltaCategoriaProducto
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE Categoria = @Categoria)
+	BEGIN
         RAISERROR ('Error: La categoría ya existe.', 16, 1);
-
+		RETURN
+	END
     INSERT INTO catalogo.CategoriaProducto (LineaProducto, Categoria)
     VALUES (@LineaProducto, @Categoria);
 END;
@@ -217,8 +255,10 @@ CREATE OR ALTER PROCEDURE catalogo.BajaCategoriaProducto
 AS
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE @ID = ID)
+	BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
-
+		RETURN
+	END
     DELETE FROM catalogo.CategoriaProducto WHERE ID = @ID;
 END;
 GO
@@ -230,11 +270,15 @@ CREATE OR ALTER PROCEDURE catalogo.ModificarCategoriaProducto
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE Categoria = @Categoria AND ID <> @ID)
+	BEGIN
         RAISERROR ('Error: La categoría ya existe.', 16, 1);
-
+		RETURN
+	END
 	IF NOT EXISTS (SELECT 1 FROM catalogo.CategoriaProducto WHERE @ID = ID)
+	BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
-
+		RETURN
+	END
     UPDATE catalogo.CategoriaProducto
     SET LineaProducto = @LineaProducto,
         Categoria = @Categoria
@@ -254,8 +298,10 @@ CREATE OR ALTER PROCEDURE catalogo.AltaProducto
 AS
 BEGIN
     IF @PrecioUnitario <= 0
+	BEGIN
         RAISERROR ('Error: Precio unitario debe ser mayor a cero.', 16, 1);
-
+		RETURN
+	END
     INSERT INTO catalogo.Producto (Nombre, ID_Categoria, PrecioUnitario, PrecioReferencia, UnidadReferencia, Fecha,IVA)
     VALUES (@Nombre, @ID_Categoria, @PrecioUnitario, @PrecioReferencia, @UnidadReferencia, @Fecha, @IVA);
 END;
@@ -267,8 +313,10 @@ AS
 BEGIN
 
 	IF NOT EXISTS (SELECT 1 FROM catalogo.Producto WHERE @ID = ID)
+	BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
-
+		RETURN
+	END
     DELETE FROM catalogo.Producto WHERE ID = @ID;
 END;
 GO
@@ -280,15 +328,20 @@ CREATE OR ALTER PROCEDURE catalogo.ModificarProducto
     @PrecioUnitario DECIMAL(10, 2),
     @PrecioReferencia DECIMAL(10, 2),
     @UnidadReferencia VARCHAR(25),
-    @Fecha DATETIME
+    @Fecha DATETIME,
+	@IVA DECIMAL(10, 2)
 AS
 BEGIN
     IF @PrecioUnitario <= 0
+	BEGIN
         RAISERROR ('Error: Precio unitario debe ser mayor a cero.', 16, 1);
-
+		RETURN
+	END
 	IF NOT EXISTS (SELECT 1 FROM catalogo.Producto WHERE @ID = ID)
+	BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
-
+		RETURN
+	END
     UPDATE catalogo.Producto
     SET Nombre = @Nombre,
         ID_Categoria = @ID_Categoria,
@@ -307,8 +360,10 @@ CREATE OR ALTER PROCEDURE ventas.AltaMedioPago
 AS
 BEGIN
     IF EXISTS (SELECT 1 FROM ventas.MedioPago WHERE Descripcion_ESP = @Descripcion_ESP OR Descripcion_ENG = @Descripcion_ENG)
+	BEGIN
         RAISERROR ('Error: El medio de pago ya existe.', 16, 1);
-
+		RETURN
+	END
     INSERT INTO ventas.MedioPago (Descripcion_ESP, Descripcion_ENG)
     VALUES (@Descripcion_ESP, @Descripcion_ENG);
 END;
@@ -319,8 +374,10 @@ CREATE OR ALTER PROCEDURE ventas.BajaMedioPago
 AS
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM ventas.MedioPago WHERE @ID = ID)
+	BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
-
+		RETURN
+	END
     DELETE FROM ventas.MedioPago WHERE ID = @ID;
 END;
 GO
@@ -331,11 +388,16 @@ CREATE OR ALTER PROCEDURE ventas.ModificarMedioPago
     @Descripcion_ENG VARCHAR(50)
 AS
 BEGIN
-    IF EXISTS (SELECT 1 FROM ventas.MedioPago WHERE (Descripcion_ESP = @Descripcion_ESP OR Descripcion_ENG = @Descripcion_ENG) AND ID <> @ID)
-        RAISERROR ('Error: El medio de pago ya existe.', 16, 1);
-
 	IF NOT EXISTS (SELECT 1 FROM ventas.MedioPago WHERE @ID = ID)
+		BEGIN
         RAISERROR ('Error: ID incorrecto.', 16, 1);
+		RETURN
+	END
+    IF EXISTS (SELECT 1 FROM ventas.MedioPago WHERE (Descripcion_ESP = @Descripcion_ESP OR Descripcion_ENG = @Descripcion_ENG) AND ID <> @ID)
+		BEGIN
+        RAISERROR ('Error: El medio de pago ya existe.', 16, 1);
+		RETURN
+	END
 
     UPDATE ventas.MedioPago
     SET Descripcion_ESP = @Descripcion_ESP,
@@ -346,20 +408,20 @@ GO
 
 CREATE OR ALTER PROCEDURE ventas.AltaFactura
     @ID_Venta INT,
-    @PuntoDeVenta CHAR(5)
+    @PuntoDeVenta CHAR(5),
+	@Comprobante VARCHAR(10)
 AS
 BEGIN
     DECLARE @ID_Factura INT;
 	DECLARE @UltimoComprobante INT;
-	DECLARE @Comprobante VARCHAR(20);
 
 	IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+	BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
-
+		RETURN
+	END
 	SELECT @UltimoComprobante = MAX(ID)
 		FROM ventas.Factura;
-
-	SET @Comprobante = @PuntoDeVenta + '-' + RIGHT('00000' + CAST(@UltimoComprobante AS VARCHAR(5)), 5);
 
     INSERT INTO ventas.Factura (Estado, FechaHora, Comprobante, PuntoDeVenta, SubTotal, IvaTotal, Total,ID_Venta)
     VALUES ('No pagada', GETDATE(), @Comprobante, @PuntoDeVenta, 0, 0, 0,@ID_Venta);
@@ -371,11 +433,15 @@ CREATE OR ALTER PROCEDURE ventas.BajaFactura
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Factura no encontrada.', 16, 1);
-
+		RETURN
+	END
     IF EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID AND Estado = 'Pagada')
+	BEGIN
         RAISERROR ('No se puede eliminar una factura pagada.', 16, 1);
-
+		RETURN
+	END
     DELETE FROM ventas.Factura WHERE ID = @ID;
 END;
 
@@ -386,11 +452,15 @@ CREATE OR ALTER PROCEDURE ventas.ModificarFactura
 AS
 BEGIN
     IF @Estado NOT IN ('Pagada', 'No pagada','Cancelada')
+	BEGIN
         RAISERROR ('Estado de factura no válido. Debe ser "Pagada", "No pagada" o "Cancelada".', 16, 1);
-
+		RETURN
+	END
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Factura no encontrada.', 16, 1);
-
+		RETURN
+	END
     UPDATE ventas.Factura
 		SET Estado = @Estado
     WHERE ID = @ID;
@@ -404,12 +474,20 @@ AS
 BEGIN
     -- Validaciones
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura)
+	BEGIN
         RAISERROR ('Factura no encontrada.', 16, 1);
+		RETURN
+	END
     IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+	BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
+		RETURN
+	END
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID_Venta = @ID_Venta AND ID = @ID_Factura)
+	BEGIN
         RAISERROR ('Factura no coincide con venta.', 16, 1);
-
+		RETURN
+	END
     INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IVA, Subtotal)
     SELECT 
         @ID_Factura AS ID_Factura,
@@ -452,7 +530,10 @@ CREATE OR ALTER PROCEDURE ventas.BajaDetalleFactura
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.DetalleFactura WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Detalle de factura no encontrado.', 16, 1);
+		RETURN
+	END
     DELETE FROM ventas.DetalleFactura WHERE ID = @ID;
 END;
 GO
@@ -463,8 +544,10 @@ CREATE OR ALTER PROCEDURE ventas.ModificarDetalleFactura
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura)
+	BEGIN
         RAISERROR ('Factura no encontrada.', 16, 1);
-
+		RETURN
+	END
     UPDATE ventas.DetalleFactura
     SET ID_Factura = @ID_Factura
     WHERE ID = @ID;
@@ -473,13 +556,13 @@ GO
 
 CREATE OR ALTER PROCEDURE ventas.AltaVenta
     @ID_Cliente INT,
-	@ID_Sucursal
+	@ID_Sucursal INT 
 AS
 BEGIN
     DECLARE @ID_Venta INT;
 
     INSERT INTO ventas.Venta (ID_Cliente, Estado, Total,ID_Sucursal)
-    VALUES (@ID_Cliente, 'Pendiente', 0,@ID_Sucursal);
+    VALUES (@ID_Cliente, 'No pagada', 0, @ID_Sucursal);
 END;
 GO
 
@@ -488,8 +571,10 @@ CREATE OR ALTER PROCEDURE ventas.BajaVenta
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
-
+		RETURN
+	END
     DELETE FROM ventas.Venta WHERE ID = @ID;
 END;
 GO
@@ -502,14 +587,20 @@ CREATE OR ALTER PROCEDURE ventas.ModificarVenta
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM tienda.Cliente WHERE ID = @ID_Cliente)
+	BEGIN
         RAISERROR ('Cliente no encontrado.', 16, 1);
-
+		RETURN
+	END
     IF @Estado NOT IN ('Pendiente', 'Completada', 'Cancelada')
+	BEGIN
         RAISERROR ('Estado de venta no válido.', 16, 1);
-
+		RETURN
+	END
     IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
-
+		RETURN
+	END
     UPDATE ventas.Venta
     SET ID_Cliente = @ID_Cliente,
         Estado = @Estado,
@@ -528,8 +619,10 @@ BEGIN
     DECLARE @Subtotal DECIMAL(18, 2);
 
 	IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+	BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
-
+		RETURN
+	END
     SELECT @PrecioUnitario = PrecioUnitario
     FROM catalogo.Producto
     WHERE ID = @ID_Producto;
@@ -537,7 +630,8 @@ BEGIN
     IF @PrecioUnitario IS NULL
     BEGIN
         RAISERROR ('El producto especificado no existe o no tiene un precio definido.', 16, 1);
-    END
+ 		RETURN
+	END
 
     INSERT INTO ventas.DetalleVenta (ID_Venta, ID_Producto, Cantidad, Precio_Unitario,Subtotal)
     VALUES (@ID_Venta, @ID_Producto, @Cantidad, @PrecioUnitario, @Cantidad *  @PrecioUnitario);
@@ -558,8 +652,10 @@ BEGIN
 	DECLARE @Subtotal DECIMAL(18, 2);
 
     IF NOT EXISTS (SELECT 1 FROM ventas.DetalleVenta WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Detalle de venta no encontrado.', 16, 1);
-
+		RETURN
+	END
 	SELECT @ID_Venta = ID_VENTA
     FROM ventas.DetalleVenta
     WHERE ID = @ID_Venta;
@@ -587,14 +683,20 @@ BEGIN
 	DECLARE @SubTotal DECIMAL(18, 2);
 
     IF NOT EXISTS (SELECT 1 FROM ventas.Venta WHERE ID = @ID_Venta)
+	BEGIN
         RAISERROR ('Venta no encontrada.', 16, 1);
-
+		RETURN
+	END
     IF NOT EXISTS (SELECT 1 FROM catalogo.Producto WHERE ID = @ID_Producto)
+	BEGIN
         RAISERROR ('Producto no encontrado.', 16, 1);
-
+		RETURN
+	END
     IF NOT EXISTS (SELECT 1 FROM ventas.DetalleVenta WHERE ID = @ID)
+	BEGIN
         RAISERROR ('Detalle de venta no encontrado.', 16, 1);
-
+		RETURN
+	END
 	SELECT @PrecioUnitario = PrecioUnitario
 		FROM catalogo.Producto
 		WHERE ID = @ID_Producto;
@@ -635,23 +737,33 @@ CREATE OR ALTER PROCEDURE ventas.AltaPago
 AS
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura)
+	BEGIN
         RAISERROR ('Factura no encontrada.', 16, 1);
-
+		RETURN
+	END
     IF EXISTS (SELECT 1 FROM ventas.Factura WHERE ID = @ID_Factura AND ESTADO = 'Pagada')
+	BEGIN
         RAISERROR ('Factura ya pagada.', 16, 1);
-
+		RETURN
+	END
     DECLARE @MontoFactura DECIMAL(18, 2);
 	SET @MontoFactura = (SELECT Total FROM ventas.Factura WHERE ID = @ID_Factura);
 
 	IF (@Monto < @MontoFactura)
+	BEGIN
         RAISERROR ('Monto insuficiente.', 16, 1);
-
+		RETURN
+	END
 	IF (@Monto > @MontoFactura)
+	BEGIN
         RAISERROR ('Monto incorrecto.', 16, 1);
-
+		RETURN
+	END
 	IF NOT EXISTS (SELECT 1 FROM ventas.MedioPago WHERE ID = @ID_MedioPago)
+	BEGIN
         RAISERROR ('Medio de pago no encontrado.', 16, 1);
-
+		RETURN
+	END
     INSERT INTO ventas.Pago (ID_Factura, ID_MedioPago, Monto, Fecha_Pago)
     VALUES (@ID_Factura, @ID_MedioPago, @Monto, GETDATE());
 
@@ -724,7 +836,7 @@ BEGIN
     ALTER TABLE catalogo.Producto WITH CHECK CHECK CONSTRAINT ALL;
     ALTER TABLE catalogo.CategoriaProducto WITH CHECK CHECK CONSTRAINT ALL;
 
-    RAISERROR ('Todas las tablas han sido vaciadas y los contadores IDENTITY han sido reiniciados.', 16, 1);
+    PRINT ('Todas las tablas han sido vaciadas y los contadores IDENTITY han sido reiniciados.');
 END;
 GO
 

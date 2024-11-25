@@ -1,4 +1,5 @@
 USE Com2900G16;
+USE Com2900G16;
 GO
 /*
 --Alumnos
