@@ -122,7 +122,7 @@ BEGIN
 		UPDATE #tmpEmpleado
 		SET DNI = cast((convert(int, dni_float)) as varchar(8))
 
-		INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, Mail_Empresa, CUIL, Cargo, Turno, ID_Sucursal)
+		INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, MailEmpresa, CUIL, Cargo, Turno, ID_Sucursal)
 		(SELECT tmp.Legajo, tmp.Nombre, tmp.Apellido,
 		DNI, REPLACE(REPLACE(REPLACE(REPLACE(tmp.mail_empresa, CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ' ', ''), CONCAT('23','-',tmp.DNI,'-','4'),
 		tmp.Cargo, CASE TRIM(tmp.Turno) WHEN 'TM' THEN 'TM' WHEN 'TT' THEN 'TT' WHEN 'Jornada completa' THEN 'TC' END , 
@@ -302,7 +302,7 @@ BEGIN
 		WITH cte_Duplicados
 		AS
 		(
-		SELECT tmp.id, ROW_NUMBER() OVER (PARTITION BY tmp.name, tmp.reference_price, tmp.reference_unit, tmp.price ORDER BY tmp.date) as Aparicion
+		SELECT tmp.id, ROW_NUMBER() OVER (PARTITION BY tmp.name, tmp.reference_price, tmp.reference_unit, tmp.price, tmp.date ORDER BY tmp.date) as Aparicion
 			FROM #staging_catalogo_producto tmp
 		)
 
@@ -335,6 +335,7 @@ BEGIN
 						AND p.PrecioUnitario = tmp.price
 						AND p.PrecioReferencia = tmp.reference_price 
 						AND p.UnidadReferencia = tmp.reference_unit COLLATE Modern_Spanish_CI_AS
+						AND p.Fecha = tmp.date
 				)
 		)
 		
@@ -641,6 +642,7 @@ BEGIN
         -- Ejecutar la instrucción BULK INSERT usando SQL dinámico
         EXEC sp_executesql @sql;
 
+
 		--tratamiento fecha
 		UPDATE #tmp_ventas
 		SET Fecha = Fecha + ' ' + Hora
@@ -648,69 +650,118 @@ BEGIN
 		UPDATE #tmp_ventas
 		SET Producto = catalogo.fnNormalizar(Producto)
 
-		IF (SELECT COUNT(1) FROM tienda.Cliente) = 0
-			INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado) VALUES ('Juan Perez', 'Member', 'M', 1);	
-
-
-		INSERT INTO ventas.Factura(id_factura_importado, FechaHora, Estado, ID_Empleado, ID_MedioPago, ID_Sucursal, ID_Cliente,PuntoDeVenta,Comprobante)
+		IF NOT EXISTS (SELECT 1 FROM tienda.Cliente WHERE Nombre = 'AuxiliarImportaciones')
+			INSERT INTO tienda.Cliente (Nombre, TipoCliente, Genero, Estado) VALUES ('AuxiliarImportaciones', 'Member', 'M', 1);	
+		
+		INSERT INTO ventas.Venta(Fecha, ID_Cliente, Total, id_factura_importado, ID_SUCURSAL, ID_Empleado)
 		(
-		SELECT tmp.ID_FACTURA,   
-					CONVERT(DATE, tmp.Fecha, 101),
-			   'Pagada',
-			   (SELECT e.ID FROM tienda.Empleado e WHERE e.Legajo = tmp.Legajo_Empleado COLLATE Modern_Spanish_CI_AS),
-			   (SELECT m.ID FROM ventas.MedioPago m WHERE tmp.Medio_De_Pago = m.Descripcion_ENG  COLLATE Modern_Spanish_CI_AS OR tmp.Medio_De_Pago = m.Descripcion_ESP COLLATE Modern_Spanish_CI_AS),
-			   (SELECT s.ID FROM tienda.Sucursal s WHERE s.Ciudad_anterior = tmp.Ciudad),
-			   (SELECT TOP(1) 1 FROM tienda.Cliente c),
-			   '00001',
-			   0
+		SELECT CONVERT(DATE, tmp.Fecha, 101),
+				(SELECT TOP(1) c.ID FROM tienda.Cliente c),
+				tmp.Cantidad * tmp.Precio_Unitario,
+				tmp.ID_FACTURA,
+				(SELECT s.ID FROM tienda.Sucursal s WHERE s.Ciudad_anterior = tmp.Ciudad),
+				(SELECT e.ID FROM tienda.Empleado e WHERE e.Legajo = tmp.Legajo_Empleado)
 			FROM #tmp_ventas tmp
 			WHERE NOT EXISTS 
 			(
 				SELECT 1
-					FROM ventas.Factura f
-					WHERE 
-					--(f.ID_Empleado = (SELECT e.ID FROM tienda.Empleado e WHERE e.Legajo = tmp.Legajo_Empleado COLLATE Modern_Spanish_CI_AS)
-					--AND CONVERT(DATETIME,(CAST(PARSE(tmp.Fecha AS DATETIME USING 'es-ES') AS DATETIME)) + ' ' + tmp.Hora, 103) = f.FechaHora)
-					--OR
-					(f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS)
+					FROM ventas.Venta v
+					WHERE v.id_factura_importado = tmp.ID_FACTURA
 			)
 		)
 		
-		INSERT INTO ventas.DetalleFactura (ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IdentificadorPago)
+		INSERT INTO ventas.DetalleVenta(ID_Venta, ID_Producto, Cantidad, Precio_Unitario, Subtotal)
 		(
-			SELECT (SELECT f.ID FROM ventas.Factura f WHERE f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS),
-				   (SELECT p.ID FROM catalogo.Producto p WHERE p.Nombre = tmp.Producto COLLATE Modern_Spanish_CI_AS AND p.PrecioUnitario = tmp.Precio_Unitario),
-				   tmp.Cantidad,
-				   tmp.Precio_Unitario,
-				   tmp.Identificador_Pago
-				FROM #tmp_ventas tmp
-				WHERE NOT EXISTS
-				(
-					SELECT 1
-						FROM ventas.DetalleFactura d
-						WHERE d.ID_Factura = (SELECT f.ID FROM ventas.Factura f WHERE f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS)
-				)
-				
-				AND EXISTS 
-				(
-					SELECT 1
-						FROM ventas.Factura f 
-						WHERE f.id_factura_importado = tmp.ID_FACTURA COLLATE Modern_Spanish_CI_AS
-				) 
-				AND EXISTS 
-				(
-					SELECT 1
-						FROM catalogo.Producto p
-						WHERE p.Nombre = tmp.Producto COLLATE Modern_Spanish_CI_AS AND p.PrecioUnitario = tmp.Precio_Unitario
-				)
-				
+		SELECT 
+			(SELECT v.ID FROM ventas.Venta v WHERE v.id_factura_importado = tmp.ID_FACTURA),
+			(SELECT p.ID FROM catalogo.Producto p WHERE p.Nombre = tmp.Producto AND p.PrecioUnitario = tmp.Precio_Unitario),
+			tmp.Cantidad,
+			tmp.Precio_Unitario,
+			tmp.Cantidad * tmp.Precio_Unitario
+			FROM #tmp_ventas tmp
+			WHERE NOT EXISTS 
+			(
+				SELECT 1
+					FROM ventas.DetalleVenta d
+					WHERE d.ID_Venta = (SELECT v.ID FROM ventas.Venta v WHERE v.id_factura_importado = tmp.ID_FACTURA)
+
+			)
+			AND EXISTS
+			(
+				SELECT 1
+					FROM ventas.Venta v
+					WHERE v.id_factura_importado = tmp.ID_FACTURA
+			)
+			AND EXISTS
+			(
+				SELECT 1
+					FROM catalogo.Producto p
+					WHERE p.Nombre = tmp.Producto AND p.PrecioUnitario = tmp.Precio_Unitario
+			)
 		)
+
 		
+		INSERT INTO ventas.Factura(Estado, FechaHora, Comprobante, PuntoDeVenta, SubTotal, IvaTotal, Total, ID_Venta)
+		(
+		SELECT 'Pagada',
+				v.Fecha,
+				'--',
+				'00000',
+				v.Total,
+				v.Total * 0.21,
+				v.Total + v.Total * 0.21,
+				v.ID
+			FROM ventas.Venta v JOIN #tmp_ventas tmp ON v.id_factura_importado = tmp.ID_FACTURA
+			WHERE NOT EXISTS
+			(
+				SELECT 1
+					FROM ventas.Factura f
+					WHERE f.ID_Venta = v.ID
+			)
+		)
+
+		INSERT INTO ventas.DetalleFactura(ID_Factura, ID_Producto, Cantidad, PrecioUnitario, IVA, Subtotal)
+		(
+		SELECT f.ID,
+				dv.ID_Producto,
+				dv.Cantidad,
+				dv.Precio_Unitario,
+				dv.Cantidad * dv.Precio_Unitario * 0.21,
+				dv.Cantidad * dv.Precio_Unitario + dv.Cantidad * dv.Precio_Unitario * 0.21
+			FROM #tmp_ventas tmp 
+			JOIN ventas.Venta v ON v.id_factura_importado = tmp.ID_FACTURA
+			JOIN ventas.Factura f ON f.ID_Venta = v.ID
+			JOIN ventas.DetalleVenta dv ON dv.ID_Venta = v.ID
+			WHERE NOT EXISTS
+			(
+				SELECT 1
+					FROM ventas.DetalleFactura df
+					WHERE df.ID_Factura = f.ID
+			)
+		)
+
+		INSERT INTO ventas.Pago(ID_Factura, ID_MedioPago, Monto, Fecha_Pago)
+		(
+		SELECT f.ID,
+			(SELECT mp.ID FROM ventas.MedioPago mp WHERE mp.Descripcion_ENG = tmp.Medio_De_Pago),
+			f.Total,
+			f.FechaHora
+			FROM ventas.Factura f 
+			JOIN ventas.Venta v ON f.ID_Venta = v.ID
+			JOIN #tmp_ventas tmp ON v.id_factura_importado = tmp.ID_FACTURA
+			WHERE NOT EXISTS
+			(
+				SELECT 1
+					FROM ventas.Pago p
+					WHERE p.ID_Factura = f.ID
+			)
+		)
 		
     END TRY
     BEGIN CATCH
         -- Capturar errores
         RAISERROR( 'Error al importar los datos ' , 16, 1);
+		
     END CATCH;
 
     -- Eliminar la tabla temporal al final del procedimiento
