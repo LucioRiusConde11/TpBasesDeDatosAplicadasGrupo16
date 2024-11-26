@@ -123,7 +123,7 @@ EXEC catalogo.AltaProducto
     @Fecha = @date,
 	@IVA = 0.21;
 SELECT * FROM catalogo.Producto;
-
+GO
 -- 2. Probando AltaProducto: PrecioUnitario inválido (error de validación).
 Declare @date date
 set @date = getdate()
@@ -136,11 +136,11 @@ EXEC catalogo.AltaProducto
     @Fecha = @date,
 	@IVA = 0.21;
 SELECT * FROM catalogo.Producto;
-
+GO
 -- 3. Probando BajaProducto: Eliminación correcta.
 EXEC catalogo.BajaProducto @ID = 1; 
 SELECT * FROM catalogo.Producto;
-
+GO
 -- 4. Probando ModificarProducto: Actualización correcta.
 Declare @date date
 set @date = getdate()
@@ -153,7 +153,7 @@ EXEC catalogo.AltaProducto
     @Fecha = @date,
 	@IVA = 0.21;
 SELECT * FROM catalogo.Producto;
-
+GO
 Declare @date date
 set @date = getdate()
 EXEC catalogo.ModificarProducto 
@@ -166,7 +166,7 @@ EXEC catalogo.ModificarProducto
     @Fecha = @date,
 	@IVA = 0.21;
 SELECT * FROM catalogo.Producto;
-
+GO
 -- 5. Probando ModificarProducto: PrecioUnitario inválido (error de validación).
 Declare @date date
 set @date = getdate()
@@ -272,8 +272,9 @@ GO
 --Prueba crear venta (Inicio Venta)
 DECLARE @idCliente INT = (SELECT ID FROM tienda.Cliente WHERE CUIT = '20-41141444-1')
 DECLARE @idSucursal INT = (SELECT ID FROM tienda.Sucursal WHERE Ciudad = 'Ciudad Ejemplo')
+DECLARE @idEmpleado INT = (SELECT TOP(1) e.ID FROM tienda.Empleado e JOIN tienda.Sucursal s ON e.ID_Sucursal = s.ID WHERE Ciudad = 'Ciudad Ejemplo' )
 
-EXEC ventas.AltaVenta @ID_Cliente = @idCliente, @ID_Sucursal = @idSucursal
+EXEC ventas.AltaVenta @ID_Cliente = @idCliente, @ID_Sucursal = @idSucursal, @ID_Empleado = @idEmpleado
 SELECT * FROM ventas.Venta
 GO
 --Prueba crear detalle venta (Agrego Productos a la venta)
