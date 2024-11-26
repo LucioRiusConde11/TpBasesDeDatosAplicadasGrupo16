@@ -46,8 +46,20 @@ BEGIN
         ENCRYPTION BY CERTIFICATE CertificadoEmpleado;
     END;
 
+	CREATE TABLE #tmp_empleados 
+	(
+		Legajo CHAR(6),
+		Nombre VARCHAR(50),
+		Apellido VARCHAR(50),
+		DNI CHAR(8), 
+		CUIL CHAR(13),
+	)
+
     OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
     DECRYPTION BY CERTIFICATE CertificadoEmpleado;
+
+	INSERT INTO #tmp_empleados 
+	SELECT e.Legajo, e.Nombre, e.Apellido, e.DNI, e.CUIL FROM tienda.Empleado e
 
 	ALTER TABLE tienda.Empleado
 	DROP CONSTRAINT CHK_DNI,CHK_CUIL;
@@ -56,12 +68,20 @@ BEGIN
 
 	ALTER TABLE tienda.Empleado
 	ADD 
-    Nombre VARBINARY(255) NOT NULL,
+    Nombre VARBINARY(255) NULL,
     Apellido VARBINARY(255) NULL,
     DNI VARBINARY(255) NULL,
 	CUIL VARBINARY(255) NULL
+
+	UPDATE tienda.Empleado
+	SET 
+		Nombre = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'),CAST((SELECT tmp.Nombre FROM #tmp_empleados tmp where tmp.Legajo = Legajo) AS varbinary(255))),
+		Apellido = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'),CAST((SELECT tmp.Apellido FROM #tmp_empleados tmp where tmp.Legajo = Legajo) AS varbinary(255))),
+		DNI = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'),CAST((SELECT tmp.DNI FROM #tmp_empleados tmp where tmp.Legajo = Legajo) AS varbinary(255))),
+		CUIL = ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'),CAST((SELECT tmp.CUIL FROM #tmp_empleados tmp where tmp.Legajo = Legajo) AS varbinary(255)))
 	
 	CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
+	
 END;
 GO
 
@@ -91,11 +111,11 @@ BEGIN
     INSERT INTO tienda.Empleado (Legajo, Nombre, Apellido, DNI, MailEmpresa, CUIL, Cargo, Turno, ID_Sucursal, Estado)
     VALUES (
         @Legajo,
-        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Nombre),
-        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @Apellido),
-        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @DNI),
+        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), CAST(@Nombre AS VARBINARY(255))),
+        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), CAST(@Apellido AS VARBINARY(255))),
+        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), CAST(@DNI AS VARBINARY(255))),
         @Mail_Empresa,
-        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), @CUIL),
+        ENCRYPTBYKEY(KEY_GUID('ClaveSimetricaEmpleado'), CAST(@CUIL AS VARBINARY(255))),
         @Cargo,
         @Turno,
         @ID_Sucursal,

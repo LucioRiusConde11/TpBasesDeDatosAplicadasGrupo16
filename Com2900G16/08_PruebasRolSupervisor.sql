@@ -3,7 +3,7 @@ USE Com2900G16;
 EXEC informe.LimpiarTodasLasTablas;
 EXEC tienda.AltaSucursal @Direccion = 'Calle Principal 456', @Ciudad = 'Ciudad Ejemplo', @Ciudad_anterior = NULL;
 EXEC tienda.AltaEmpleado @Legajo = '000002', @Nombre = 'Ana', @Apellido = 'Lopez', @DNI = '87654321',
-    @Mail_Empresa = 'ana.lopez@empresa.com', @CUIL = '27-87654321-9', @Cargo = 'Vendedor', @Turno = 'TT', @ID_Sucursal = 0, @Estado = 1;
+    @Mail_Empresa = 'ana.lopez@empresa.com', @CUIL = '27-87654321-9', @Cargo = 'Vendedor', @Turno = 'TT', @ID_Sucursal = 1, @Estado = 1;
 EXEC tienda.AltaCliente @Nombre = 'Laura Garcia', @TipoCliente = 'Member', @Genero = 'F', @Estado = 1, @CUIT = '20-41141444-1';
 EXEC catalogo.AltaCategoriaProducto @LineaProducto = 'Línea Jardín', @Categoria = 'Muebles de Jardín';
 
@@ -11,7 +11,7 @@ Declare @date date
 set @date = getdate()
 EXEC catalogo.AltaProducto 
     @Nombre = 'Lavadora', 
-    @ID_Categoria = 0, 
+    @ID_Categoria = 1, 
     @PrecioUnitario = 2000.00, 
     @PrecioReferencia = 2000.00, 
     @UnidadReferencia = 'Unidad', 
@@ -22,7 +22,7 @@ Declare @date date
 set @date = getdate()
 EXEC catalogo.AltaProducto 
     @Nombre = 'Silla', 
-    @ID_Categoria = 0, 
+    @ID_Categoria = 1, 
     @PrecioUnitario = 2000.00, 
     @PrecioReferencia = 2000.00, 
     @UnidadReferencia = 'Unidad', 
@@ -32,12 +32,12 @@ EXEC catalogo.AltaProducto
 EXEC ventas.AltaMedioPago 
     @Descripcion_ESP = 'Tarjeta de Crédito', 
     @Descripcion_ENG = 'Credit Card';
-EXEC ventas.AltaVenta @ID_Cliente = 0, @ID_Sucursal = 0
+EXEC ventas.AltaVenta @ID_Cliente = 1, @ID_Sucursal = 1, @ID_Empleado = 1
 EXEC ventas.AltaDetalleVenta @ID_Venta=1, @ID_Producto= 1, @Cantidad=2
 EXEC ventas.AltaDetalleVenta @ID_Venta=1, @ID_Producto= 2, @Cantidad=5
 EXEC ventas.AltaFactura @ID_Venta = 1 , @PuntoDeVenta = 0001,@Comprobante = '00000001'
-EXEC ventas.AltaDetalleFactura @ID_Venta = 1, @ID_Factura = 0
-EXEC ventas.AltaPago @ID_Factura = 0, @ID_MedioPago = 0, @Monto = 14840.00
+EXEC ventas.AltaDetalleFactura @ID_Venta = 1, @ID_Factura = 1
+EXEC ventas.AltaPago @ID_Factura = 1, @ID_MedioPago = 1, @Monto = 16940.00
 
 -- 2. Creación de los usuarios y asignación de roles
 EXEC ventas.CrearRolSupervisor
@@ -55,12 +55,12 @@ EXECUTE AS USER = 'SupervisorUser';
 
 PRINT 'Intentando crear nota de crédito como Supervisor:';
 EXEC ventas.CrearNotaCredito 
-    @ID_Factura = 0, 
+    @ID_Factura = 1, 
     @ID_Producto = 1, 
     @Motivo = 'Devolución de producto defectuoso'
 
 EXEC ventas.CrearNotaCredito 
-    @ID_Factura = 0, 
+    @ID_Factura = 1, 
     @Motivo = 'Devolución de producto defectuoso'
 
 SELECT * FROM ventas.Factura 

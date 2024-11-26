@@ -1,12 +1,13 @@
 USE Com2900G16;
 GO
-
+EXEC informe.LimpiarTodasLasTablas
 -- Visualizar datos antes de insertar
 SELECT * FROM tienda.Empleado;
 GO
 
 -- Agregar un nuevo empleado con el procedimiento almacenado AltaEmpleado
-EXEC tienda.AltaEmpleado 
+EXEC tienda.AltaSucursal 'Ejemplo 123', 'Ramos Mejia'
+EXEC tienda.AltaEmpleado --SE EJECUTA CON EL ALTA EMPLEADO ORIGINAL, SIN ENCRIPTACION
     @Legajo = '112233', 
     @Nombre = 'Carlos', 
     @Apellido = 'López', 
@@ -74,7 +75,7 @@ GO
 OPEN SYMMETRIC KEY ClaveSimetricaEmpleado
 DECRYPTION BY CERTIFICATE CertificadoEmpleado;
 SELECT CONVERT(varchar, DECRYPTBYKEY(E.Apellido)) AS Apellido, CONVERT(varchar, DECRYPTBYKEY(E.Nombre)) AS Nombre,
-CONVERT(varchar, DECRYPTBYKEY(E.MailEmpresa)) AS Mail_Empresa, CONVERT(varchar, DECRYPTBYKEY(E.DNI)) AS DNI,
+CONVERT(varchar, DECRYPTBYKEY(E.DNI)) AS DNI,
 CONVERT(varchar, DECRYPTBYKEY(E.CUIL)) AS CUIL
 FROM tienda.Empleado E;
 CLOSE SYMMETRIC KEY ClaveSimetricaEmpleado;
