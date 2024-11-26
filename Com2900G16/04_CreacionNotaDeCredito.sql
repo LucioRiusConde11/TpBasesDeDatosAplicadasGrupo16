@@ -64,10 +64,9 @@ BEGIN
         SET Estado = 1
         WHERE ID_Factura = @ID_Factura AND ID_Producto = @ID_Producto;
 
-        UPDATE ventas.DetalleVenta
-        SET Estado = 1
-        WHERE ID_Venta = (SELECT ID_Venta FROM ventas.Factura WHERE ID = @ID_Factura)
-              AND ID_Producto = @ID_Producto;
+		UPDATE ventas.Factura
+        SET Estado = 'Cancelada'
+        WHERE ID = @ID_Factura;
     END
 
     -- Registrar la nota de crédito
